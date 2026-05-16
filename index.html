@@ -646,7 +646,7 @@ Bu kanalı analiz et. SADECE JSON döndür, başka hiçbir şey yazma:
     setStatus('Benzer kanallar aranıyor...');
     const results = await Promise.all(
       queries.map(q =>
-        yt('search?part=snippet&type=channel&q=' + encodeURIComponent(q) + '&maxResults=12')
+        yt('search?part=snippet&type=channel&q=' + encodeURIComponent(q) + '&maxResults=15')
           .then(d => (d.items || []).map(i => i.snippet.channelId))
           .catch(() => [])
       )
@@ -656,7 +656,7 @@ Bu kanalı analiz et. SADECE JSON döndür, başka hiçbir şey yazma:
     const candidateIds = [];
     for (const arr of results) {
       for (const cid of arr) {
-        if (!seen.has(cid) && candidateIds.length < 20) { seen.add(cid); candidateIds.push(cid); }
+        if (!seen.has(cid) && candidateIds.length < 40) { seen.add(cid); candidateIds.push(cid); }
       }
     }
 
@@ -671,13 +671,13 @@ Bu kanalı analiz et. SADECE JSON döndür, başka hiçbir şey yazma:
     if (!candidates.length) throw new Error('Yeterli aboneli benzer kanal bulunamadı.');
 
     setStatus('En benzer 7 kanal seçiliyor...');
-    const summary = candidates.slice(0, 15).map((c,i) =>
+    const summary = candidates.slice(0, 20).map((c,i) =>
       (i+1) + '. ID:' + c.id + ' | "' + c.snippet.title + '" | ' + fmt(c.statistics?.subscriberCount) + ' | ' + (c.snippet.description||'').slice(0,80)
     ).join('\n');
 
     const rankPrompt = `Kaynak kanal konsepti: "${concept}"
 
-Aşağıdaki kanallardan SADECE gerçekten aynı içerik tipini yapanları seç. Alakasız olanları kesinlikle dahil etme. En benzer 7 tanesini listele.
+Aşağıdaki kanallardan gerçekten aynı içerik tipini yapanları seç. KESİNLİKLE 7 TANE seçmelisin — daha az olursa en yakın olanları da ekle. Alakasız olanları çıkar ama 7'yi doldur.
 
 SADECE JSON döndür:
 {
