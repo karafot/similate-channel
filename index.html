@@ -3,977 +3,692 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kanal Analizi — YouTube × Gemini</title>
+<title>YouTube Kanal Analizörü</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #080c10;
-    --surface: #0e1520;
-    --surface2: #141d2b;
-    --border: #1e2d42;
-    --accent: #e63946;
-    --accent2: #ff6b6b;
-    --cyan: #00d2ff;
-    --gold: #ffd166;
-    --green: #06d6a0;
-    --text: #e8edf5;
-    --muted: #6b7c93;
-    --card-glow: rgba(0,210,255,0.06);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Background grid pattern */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,210,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,210,255,0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Radial glow top */
-  body::after {
-    content: '';
-    position: fixed;
-    top: -200px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 800px;
-    height: 500px;
-    background: radial-gradient(ellipse, rgba(230,57,70,0.12) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container {
-    position: relative;
-    z-index: 1;
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 0 24px 80px;
-  }
-
-  /* ── HEADER ── */
-  header {
-    padding: 56px 0 48px;
-    text-align: center;
-  }
-
-  .logo-mark {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 40px;
-    padding: 6px 18px 6px 8px;
-    margin-bottom: 32px;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-
-  .logo-dot {
-    width: 28px; height: 28px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-  }
-
-  h1 {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(36px, 6vw, 62px);
-    font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    color: var(--text);
-    margin-bottom: 16px;
-  }
-
-  h1 span {
-    background: linear-gradient(135deg, var(--cyan), var(--accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .subtitle {
-    color: var(--muted);
-    font-size: 16px;
-    font-weight: 300;
-    line-height: 1.6;
-    max-width: 460px;
-    margin: 0 auto;
-  }
-
-  /* ── SEARCH ── */
-  .search-wrap {
-    margin: 40px auto 0;
-    max-width: 560px;
-  }
-
-  .search-box {
-    display: flex;
-    align-items: center;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 14px;
-    padding: 6px 6px 6px 20px;
-    gap: 10px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-
-  .search-box:focus-within {
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 3px rgba(0,210,255,0.1), 0 8px 32px rgba(0,0,0,0.4);
-  }
-
-  .search-icon {
-    color: var(--muted);
-    flex-shrink: 0;
-    font-size: 18px;
-  }
-
-  #channelInput {
-    flex: 1;
-    background: none;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 400;
-    padding: 10px 0;
-    caret-color: var(--cyan);
-  }
-
-  #channelInput::placeholder { color: var(--muted); }
-
-  #searchBtn {
-    background: linear-gradient(135deg, var(--accent), #c1121f);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 24px;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.15s;
-    white-space: nowrap;
-  }
-
-  #searchBtn:hover { opacity: 0.9; transform: translateY(-1px); }
-  #searchBtn:active { transform: translateY(0); }
-  #searchBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-  .examples {
-    margin-top: 14px;
-    text-align: center;
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  .examples span {
-    color: var(--cyan);
-    cursor: pointer;
-    margin: 0 6px;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    transition: color 0.2s;
-  }
-  .examples span:hover { color: #fff; }
-
-  /* ── STATUS / STEPS ── */
-  #status {
-    margin: 40px auto;
-    max-width: 560px;
-    display: none;
-  }
-
-  .step-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .step {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    font-size: 14px;
-    color: var(--muted);
-    transition: all 0.3s;
-  }
-
-  .step.active {
-    border-color: var(--cyan);
-    color: var(--text);
-    background: rgba(0,210,255,0.05);
-  }
-
-  .step.done {
-    border-color: var(--green);
-    color: var(--green);
-    background: rgba(6,214,160,0.04);
-  }
-
-  .step.error-step {
-    border-color: var(--accent);
-    color: var(--accent2);
-    background: rgba(230,57,70,0.05);
-  }
-
-  .step-icon {
-    width: 24px; height: 24px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px;
-    flex-shrink: 0;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-  }
-
-  .step.active .step-icon { animation: pulse-ring 1.2s infinite; }
-  .step.done .step-icon { background: var(--green); color: #000; border-color: var(--green); }
-  .step.error-step .step-icon { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-  @keyframes pulse-ring {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(0,210,255,0.4); }
-    50% { box-shadow: 0 0 0 6px rgba(0,210,255,0); }
-  }
-
-  .spinner {
-    width: 14px; height: 14px;
-    border: 2px solid rgba(0,210,255,0.3);
-    border-top-color: var(--cyan);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── ERROR BANNER ── */
-  #errorBox {
-    display: none;
-    margin: 24px auto;
-    max-width: 560px;
-    background: rgba(230,57,70,0.1);
-    border: 1px solid rgba(230,57,70,0.3);
-    border-radius: 12px;
-    padding: 16px 20px;
-    font-size: 14px;
-    color: var(--accent2);
-    line-height: 1.6;
-  }
-
-  /* ── RESULTS ── */
-  #results { display: none; animation: fadeUp 0.5s ease; }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* TARGET CHANNEL CARD */
-  .target-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 28px;
-    margin-bottom: 40px;
-    display: flex;
-    align-items: flex-start;
-    gap: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .target-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--cyan), var(--accent));
-  }
-
-  .target-card::after {
-    content: '';
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 200px; height: 200px;
-    background: radial-gradient(circle, rgba(0,210,255,0.06), transparent 70%);
-    pointer-events: none;
-  }
-
-  .target-thumb {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .target-info { flex: 1; }
-
-  .target-name {
-    font-family: 'Syne', sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-
-  .target-handle {
-    color: var(--cyan);
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
-
-  .target-meta {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-
-  .meta-pill {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 5px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-  }
-
-  .meta-pill .icon { font-size: 14px; }
-
-  .niche-tag {
-    display: inline-flex;
-    align-items: center;
-    margin-top: 12px;
-    background: rgba(255,209,102,0.1);
-    border: 1px solid rgba(255,209,102,0.3);
-    color: var(--gold);
-    border-radius: 20px;
-    padding: 4px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  /* SECTION HEADERS */
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 20px;
-  }
-
-  .section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-  }
-
-  .section-badge {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    border-radius: 20px;
-  }
-
-  .badge-similar { background: rgba(0,210,255,0.15); color: var(--cyan); border: 1px solid rgba(0,210,255,0.3); }
-  .badge-leader  { background: rgba(255,209,102,0.15); color: var(--gold); border: 1px solid rgba(255,209,102,0.3); }
-  .badge-rising  { background: rgba(6,214,160,0.15); color: var(--green); border: 1px solid rgba(6,214,160,0.3); }
-
-  .section-line {
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* GROUPS */
-  .group-section { margin-bottom: 48px; }
-
-  .channels-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-  }
-
-  /* CHANNEL CARD */
-  .ch-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-    cursor: default;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .ch-card:hover {
-    border-color: rgba(0,210,255,0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,210,255,0.1);
-  }
-
-  .ch-card.similar:hover { border-color: rgba(0,210,255,0.4); }
-  .ch-card.leader:hover  { border-color: rgba(255,209,102,0.4); }
-  .ch-card.rising:hover  { border-color: rgba(6,214,160,0.4); }
-
-  .ch-thumb {
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--border);
-    flex-shrink: 0;
-    background: var(--surface2);
-  }
-
-  .ch-info { flex: 1; min-width: 0; }
-
-  .ch-name {
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 4px;
-  }
-
-  .ch-subs {
-    font-size: 12px;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-
-  .ch-subs strong { color: var(--text); font-weight: 500; }
-
-  .ch-desc {
-    font-size: 13px;
-    color: #8a9ab5;
-    line-height: 1.55;
-    font-style: italic;
-  }
-
-  .ch-type-badge {
-    position: absolute;
-    top: 12px; right: 12px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    padding: 3px 10px;
-    border-radius: 20px;
-  }
-
-  .similar .ch-type-badge { background: rgba(0,210,255,0.12); color: var(--cyan); }
-  .leader  .ch-type-badge { background: rgba(255,209,102,0.12); color: var(--gold); }
-  .rising  .ch-type-badge { background: rgba(6,214,160,0.12); color: var(--green); }
-
-  /* RECENT VIDEOS */
-  .videos-section {
-    margin-bottom: 48px;
-  }
-
-  .videos-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .video-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    font-size: 14px;
-    transition: border-color 0.15s;
-  }
-
-  .video-item:hover { border-color: rgba(0,210,255,0.2); }
-
-  .video-num {
-    font-family: 'Syne', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--muted);
-    width: 20px;
-    flex-shrink: 0;
-    text-align: right;
-  }
-
-  .video-title { flex: 1; color: var(--text); line-height: 1.4; }
-
-  .video-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    flex-shrink: 0;
-  }
-
-  /* FOOTER */
-  footer {
-    text-align: center;
-    padding: 32px 0 0;
-    font-size: 12px;
-    color: var(--muted);
-    border-top: 1px solid var(--border);
-    margin-top: 20px;
-  }
-
-  /* SCROLL */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-  @media (max-width: 600px) {
-    header { padding: 36px 0 28px; }
-    .target-card { flex-direction: column; }
-    .channels-grid { grid-template-columns: 1fr; }
-  }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #07090f;
+  --surface:  #0d1117;
+  --card:     #111827;
+  --border:   #1f2937;
+  --border2:  #2d3748;
+  --text:     #f0f4ff;
+  --muted:    #6b7a99;
+  --purple:   #a78bfa;
+  --purple-d: #7c3aed;
+  --gold:     #fbbf24;
+  --gold-d:   #d97706;
+  --green:    #34d399;
+  --green-d:  #059669;
+  --red:      #f87171;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(124,58,237,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124,58,237,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
+}
+
+.glow1 {
+  position: fixed; pointer-events: none; z-index: 0;
+  width: 700px; height: 500px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(124,58,237,0.1) 0%, transparent 70%);
+  top: -150px; left: -150px; filter: blur(40px);
+}
+.glow2 {
+  position: fixed; pointer-events: none; z-index: 0;
+  width: 500px; height: 400px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(217,119,6,0.07) 0%, transparent 70%);
+  top: 300px; right: -100px; filter: blur(60px);
+}
+
+.wrap {
+  position: relative; z-index: 1;
+  max-width: 960px; margin: 0 auto;
+  padding: 0 20px 100px;
+}
+
+/* HEADER */
+.header { padding: 64px 0 52px; text-align: center; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--purple);
+  background: rgba(167,139,250,0.08);
+  border: 1px solid rgba(167,139,250,0.2);
+  border-radius: 100px; padding: 6px 16px;
+  margin-bottom: 28px;
+}
+.eyebrow-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--purple);
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+h1 {
+  font-size: clamp(40px, 7vw, 74px);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -0.04em;
+  margin-bottom: 18px;
+}
+h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--purple) 0%, #e879f9 50%, var(--gold) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tagline {
+  font-size: 16px; font-weight: 300;
+  color: var(--muted); line-height: 1.7;
+  max-width: 420px; margin: 0 auto 40px;
+}
+
+/* SEARCH */
+.search-outer { max-width: 580px; margin: 0 auto; }
+
+.search-field {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card);
+  border: 1.5px solid var(--border2);
+  border-radius: 16px;
+  padding: 8px 8px 8px 22px;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  margin-bottom: 14px;
+}
+.search-field:focus-within {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 4px rgba(167,139,250,0.1), 0 16px 48px rgba(0,0,0,0.5);
+}
+.s-icon { font-size: 18px; flex-shrink: 0; }
+
+#channelInput {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-family: 'Outfit', sans-serif;
+  font-size: 15px; font-weight: 400; padding: 10px 0;
+  caret-color: var(--purple);
+}
+#channelInput::placeholder { color: var(--muted); }
+
+#analyzeBtn {
+  background: linear-gradient(135deg, var(--purple-d), #9333ea);
+  color: #fff; border: none; border-radius: 10px;
+  padding: 13px 26px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700; font-size: 13px;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  cursor: pointer; white-space: nowrap;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+}
+#analyzeBtn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 28px rgba(124,58,237,0.5); }
+#analyzeBtn:active:not(:disabled) { transform: translateY(0); }
+#analyzeBtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.quick {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  justify-content: center; font-size: 13px; color: var(--muted);
+}
+.ql { font-weight: 400; }
+.qc {
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 4px 14px;
+  font-size: 12px; color: var(--text); cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.qc:hover { border-color: var(--purple); color: var(--purple); }
+
+/* PROGRESS */
+#progress { display: none; max-width: 520px; margin: 44px auto 0; }
+
+.steps { display: flex; flex-direction: column; gap: 6px; }
+.step {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 18px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; font-size: 14px; color: var(--muted);
+  transition: all 0.35s;
+}
+.step.active { border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.06); color: var(--text); }
+.step.done   { border-color: rgba(52,211,153,0.35);  background: rgba(52,211,153,0.05);  color: var(--green); }
+.step.err    { border-color: rgba(248,113,113,0.4);  background: rgba(248,113,113,0.05); color: var(--red); }
+
+.sn {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+  background: var(--surface); transition: all 0.3s;
+}
+.step.active .sn { border-color: var(--purple); }
+.step.done .sn   { border-color: var(--green); background: var(--green); color: #000; }
+.step.err .sn    { border-color: var(--red); background: var(--red); color: #fff; }
+
+.spin {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(167,139,250,0.25);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: rot 0.7s linear infinite;
+}
+@keyframes rot { to { transform: rotate(360deg); } }
+
+/* ERROR */
+#errBox {
+  display: none; max-width: 520px; margin: 24px auto 0;
+  background: rgba(248,113,113,0.08);
+  border: 1px solid rgba(248,113,113,0.25);
+  border-radius: 14px; padding: 16px 20px;
+  font-size: 14px; color: var(--red); line-height: 1.6;
+}
+
+/* RESULTS */
+#results { display: none; }
+@keyframes riseIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+/* TARGET HERO */
+.hero {
+  position: relative; overflow: hidden;
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: 24px; padding: 32px;
+  margin-bottom: 44px;
+  animation: riseIn 0.5s ease;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(124,58,237,0.08) 0%, transparent 55%);
+  pointer-events: none;
+}
+.hero::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--purple-d), #e879f9, var(--gold));
+}
+
+.hero-inner { display: flex; align-items: flex-start; gap: 24px; position: relative; z-index: 1; }
+
+.hero-thumb {
+  width: 88px; height: 88px; border-radius: 50%;
+  object-fit: cover; flex-shrink: 0;
+  border: 3px solid var(--border2);
+  background: var(--surface);
+}
+.hero-info { flex: 1; }
+.hero-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+.hero-handle { font-size: 14px; color: var(--purple); margin-bottom: 14px; }
+
+.stats-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.stat {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 100px; padding: 6px 16px;
+  font-size: 13px; font-weight: 500;
+}
+
+.niche-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.25);
+  color: var(--gold); border-radius: 100px;
+  padding: 5px 16px; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.07em; text-transform: uppercase;
+}
+.hero-summary {
+  margin-top: 12px; font-size: 14px; color: #7a8baa;
+  line-height: 1.65; font-weight: 300; max-width: 600px;
+}
+
+/* SECTIONS */
+.section { margin-bottom: 48px; animation: riseIn 0.5s ease both; }
+.section:nth-child(1) { animation-delay: 0.05s; }
+.section:nth-child(2) { animation-delay: 0.1s; }
+.section:nth-child(3) { animation-delay: 0.15s; }
+.section:nth-child(4) { animation-delay: 0.2s; }
+
+.sec-hd { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.sec-ttl { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+.sec-line { flex: 1; height: 1px; background: var(--border); }
+.sec-badge {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 4px 12px; border-radius: 100px;
+  white-space: nowrap;
+}
+.bp { background: rgba(167,139,250,0.1); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+.bg { background: rgba(251,191,36,0.1);  color: var(--gold);   border: 1px solid rgba(251,191,36,0.2); }
+.bgr{ background: rgba(52,211,153,0.1);  color: var(--green);  border: 1px solid rgba(52,211,153,0.2); }
+.bm { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+
+/* VIDEO LIST */
+.vlist { display: flex; flex-direction: column; gap: 6px; }
+.vrow {
+  display: flex; align-items: center; gap: 14px;
+  padding: 11px 16px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; font-size: 13.5px;
+  transition: border-color 0.2s;
+}
+.vrow:hover { border-color: var(--border2); }
+.vn { font-size: 11px; font-weight: 700; color: var(--muted); width: 18px; text-align: right; flex-shrink: 0; }
+.vbar { width: 3px; height: 16px; border-radius: 2px; background: var(--purple-d); opacity: 0.5; flex-shrink: 0; }
+.vt  { flex: 1; color: var(--text); line-height: 1.4; }
+
+/* CHANNEL GRID */
+.ch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 14px;
+}
+
+.ch-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px 18px 18px 18px;
+  display: flex; gap: 14px; align-items: flex-start;
+  position: relative; overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.ch-card::before {
+  content: ''; position: absolute; inset: 0;
+  opacity: 0; transition: opacity 0.25s;
+  pointer-events: none;
+}
+.ch-card:hover { transform: translateY(-3px); }
+.ch-card:hover::before { opacity: 1; }
+
+.ccs:hover { border-color: rgba(167,139,250,0.4); box-shadow: 0 12px 36px rgba(124,58,237,0.14); }
+.ccs::before { background: radial-gradient(ellipse at top left, rgba(167,139,250,0.08), transparent 70%); }
+
+.ccl:hover { border-color: rgba(251,191,36,0.4); box-shadow: 0 12px 36px rgba(217,119,6,0.14); }
+.ccl::before { background: radial-gradient(ellipse at top left, rgba(251,191,36,0.08), transparent 70%); }
+
+.ccr:hover { border-color: rgba(52,211,153,0.4); box-shadow: 0 12px 36px rgba(5,150,105,0.14); }
+.ccr::before { background: radial-gradient(ellipse at top left, rgba(52,211,153,0.08), transparent 70%); }
+
+.ch-thumb {
+  width: 50px; height: 50px; border-radius: 50%;
+  object-fit: cover; flex-shrink: 0;
+  background: var(--surface); border: 2px solid var(--border);
+}
+.ch-body { flex: 1; min-width: 0; position: relative; z-index: 1; }
+.ch-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+.ch-subs { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.ch-subs strong { color: var(--text); font-weight: 600; }
+.ch-desc { font-size: 12.5px; color: #7a8baa; line-height: 1.55; font-style: italic; }
+
+.ch-tag {
+  position: absolute; top: 10px; right: 10px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 3px 10px; border-radius: 100px;
+}
+.ccs .ch-tag { background: rgba(167,139,250,0.12); color: var(--purple); }
+.ccl .ch-tag { background: rgba(251,191,36,0.12);  color: var(--gold); }
+.ccr .ch-tag { background: rgba(52,211,153,0.12);  color: var(--green); }
+
+footer {
+  text-align: center; font-size: 12px; color: var(--muted);
+  border-top: 1px solid var(--border); padding-top: 28px; margin-top: 12px;
+}
+
+@media (max-width: 580px) {
+  .hero-inner { flex-direction: column; }
+  .ch-grid { grid-template-columns: 1fr; }
+  h1 { font-size: 40px; }
+}
 </style>
 </head>
 <body>
-<div class="container">
 
-  <!-- HEADER -->
-  <header>
-    <div class="logo-mark">
-      <div class="logo-dot">▶</div>
-      YouTube × Gemini Analiz
+<div class="glow1"></div>
+<div class="glow2"></div>
+
+<div class="wrap">
+
+  <header class="header">
+    <div class="eyebrow">
+      <div class="eyebrow-dot"></div>
+      YouTube × Gemini AI
     </div>
-    <h1>Kanal<br><span>Analizörü</span></h1>
-    <p class="subtitle">Bir YouTube kanalını analiz et, benzer kanalları keşfet ve niş liderlerini bul.</p>
+    <h1>Kanal<br><em>Analizörü</em></h1>
+    <p class="tagline">Herhangi bir YouTube kanalını analiz et. Benzer kanalları, niş liderlerini ve yükselen isimleri keşfet.</p>
 
-    <div class="search-wrap">
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input id="channelInput" type="text" placeholder="Kanal adı veya @handle girin…" autocomplete="off" />
-        <button id="searchBtn" onclick="startAnalysis()">Analiz Et</button>
+    <div class="search-outer">
+      <div class="search-field">
+        <span class="s-icon">📺</span>
+        <input id="channelInput" type="text" placeholder="Kanal adı veya @handle girin…" autocomplete="off">
+        <button id="analyzeBtn" onclick="run()">Analiz Et</button>
       </div>
-      <div class="examples">
-        Örnek:
-        <span onclick="setExample('@mkbhd')">@mkbhd</span>
-        <span onclick="setExample('@veritasium')">@veritasium</span>
-        <span onclick="setExample('@PewDiePie')">@PewDiePie</span>
+      <div class="quick">
+        <span class="ql">Örnek:</span>
+        <span class="qc" onclick="pick('@mkbhd')">@mkbhd</span>
+        <span class="qc" onclick="pick('@veritasium')">@veritasium</span>
+        <span class="qc" onclick="pick('@kurzgesagt')">@kurzgesagt</span>
+        <span class="qc" onclick="pick('linus tech tips')">LinusTechTips</span>
       </div>
     </div>
   </header>
 
-  <!-- STATUS STEPS -->
-  <div id="status">
-    <div class="step-list">
-      <div class="step" id="step1">
-        <div class="step-icon">1</div>
-        <span>YouTube'dan kanal bilgisi çekiliyor…</span>
-      </div>
-      <div class="step" id="step2">
-        <div class="step-icon">2</div>
-        <span>Son 10 video başlığı alınıyor…</span>
-      </div>
-      <div class="step" id="step3">
-        <div class="step-icon">3</div>
-        <span>Gemini ile niş analizi yapılıyor…</span>
-      </div>
-      <div class="step" id="step4">
-        <div class="step-icon">4</div>
-        <span>Benzer kanallar araştırılıyor…</span>
-      </div>
-      <div class="step" id="step5">
-        <div class="step-icon">5</div>
-        <span>Sonuçlar hazırlanıyor…</span>
-      </div>
+  <div id="progress">
+    <div class="steps">
+      <div class="step" id="s1"><div class="sn">1</div><span>Kanal bilgisi çekiliyor…</span></div>
+      <div class="step" id="s2"><div class="sn">2</div><span>Son 10 video başlığı alınıyor…</span></div>
+      <div class="step" id="s3"><div class="sn">3</div><span>Gemini ile niş tespiti ve kanal önerileri yapılıyor…</span></div>
+      <div class="step" id="s4"><div class="sn">4</div><span>Önerilen kanalların verileri YouTube'dan çekiliyor…</span></div>
+      <div class="step" id="s5"><div class="sn">5</div><span>Sonuçlar hazırlanıyor…</span></div>
     </div>
   </div>
 
-  <!-- ERROR -->
-  <div id="errorBox"></div>
+  <div id="errBox"></div>
 
-  <!-- RESULTS -->
   <div id="results">
-    <div id="targetCard"></div>
-    <div id="videosSection"></div>
-    <div id="groupsSection"></div>
+    <div id="heroSlot"></div>
+    <div id="videosSlot"></div>
+    <div id="groupsSlot"></div>
   </div>
 
+  <footer>Tüm kanal verileri YouTube Data API v3 üzerinden canlı çekilmektedir · Niş analizi Google Gemini 2.0 Flash ile yapılmaktadır</footer>
 </div>
 
 <script>
-const YT_KEY     = 'AIzaSyD_I0K-QSgYbk5bMXa0OjTARgUGXICD1G8';
-const GEMINI_KEY = 'AIzaSyCIZuRb-xzTpOG9MeUVo_6SL31AHQd1iKM';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+const YT   = 'AIzaSyD_I0K-QSgYbk5bMXa0OjTARgUGXICD1G8';
+const GEM  = 'AIzaSyADt5cgXLR6ZJF0zBAJAtc4wi5AWy-MjME';
+const GURL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEM}`;
 
-function setExample(h) {
-  document.getElementById('channelInput').value = h;
-}
+function pick(v) { document.getElementById('channelInput').value = v; }
+document.getElementById('channelInput').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
 
-document.getElementById('channelInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') startAnalysis();
-});
-
-function showStep(n, state='active', icon='') {
-  const el = document.getElementById('step' + n);
+function stepSet(id, state) {
+  const el = document.getElementById(id);
   el.className = 'step ' + state;
-  const iconEl = el.querySelector('.step-icon');
-  if (state === 'active') {
-    iconEl.innerHTML = '<div class="spinner"></div>';
-  } else if (state === 'done') {
-    iconEl.innerHTML = '✓';
-  } else if (state === 'error-step') {
-    iconEl.innerHTML = '✕';
-  } else {
-    iconEl.textContent = n;
-  }
+  const n = el.querySelector('.sn');
+  const num = id.replace('s', '');
+  if (state === 'active') n.innerHTML = '<div class="spin"></div>';
+  else if (state === 'done') n.textContent = '✓';
+  else if (state === 'err')  n.textContent = '✕';
+  else n.textContent = num;
 }
 
-function showError(msg) {
-  const box = document.getElementById('errorBox');
-  box.style.display = 'block';
-  box.innerHTML = '⚠️ ' + msg;
-  document.getElementById('searchBtn').disabled = false;
+function showErr(msg) {
+  const b = document.getElementById('errBox');
+  b.style.display = 'block';
+  b.innerHTML = '⚠️ ' + msg;
+  document.getElementById('analyzeBtn').disabled = false;
 }
 
-function formatSubs(n) {
-  n = parseInt(n);
+function fmt(n) {
+  n = parseInt(n) || 0;
   if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
   if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
   if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
-  return n;
+  return '' + n;
 }
 
-async function ytFetch(url) {
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function ytGet(url) {
   const r = await fetch(url);
   if (!r.ok) throw new Error('YouTube API hatası: ' + r.status);
   return r.json();
 }
 
-async function geminiAsk(prompt) {
-  const r = await fetch(GEMINI_URL, {
+async function geminiCall(prompt) {
+  const r = await fetch(GURL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
   });
-  if (r.status === 429) {
-    throw new Error('QUOTA');
-  }
+  if (r.status === 429) throw new Error('QUOTA');
   if (!r.ok) throw new Error('Gemini API hatası: ' + r.status);
-  const data = await r.json();
-  return data.candidates[0].content.parts[0].text;
+  const d = await r.json();
+  return d.candidates[0].content.parts[0].text;
 }
 
-function parseJSON(raw) {
-  // Strip markdown fences
-  let cleaned = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-  return JSON.parse(cleaned);
+function stripFences(s) {
+  return s.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
 }
 
-async function startAnalysis() {
-  const input = document.getElementById('channelInput').value.trim();
-  if (!input) return;
+async function run() {
+  const query = document.getElementById('channelInput').value.trim();
+  if (!query) return;
 
-  // Reset UI
-  document.getElementById('searchBtn').disabled = true;
-  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('errBox').style.display = 'none';
   document.getElementById('results').style.display = 'none';
-  const statusEl = document.getElementById('status');
-  statusEl.style.display = 'block';
-  [1,2,3,4,5].forEach(n => showStep(n, 'idle'));
+  document.getElementById('progress').style.display = 'block';
+  ['s1','s2','s3','s4','s5'].forEach(id => stepSet(id, 'idle'));
 
   try {
-    // ── STEP 1: Find channel ──
-    showStep(1, 'active');
-    let channelId, channelData;
-    const handle = input.startsWith('@') ? input : '@' + input.replace(/^@/,'');
-    const handleClean = handle.replace('@','');
+    /* ── S1: Channel info ── */
+    stepSet('s1', 'active');
 
-    // Try handle search first
-    let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(input)}&maxResults=1&key=${YT_KEY}`;
-    const searchData = await ytFetch(searchUrl);
-    if (!searchData.items || searchData.items.length === 0) throw new Error('Kanal bulunamadı.');
-    channelId = searchData.items[0].snippet.channelId || searchData.items[0].id.channelId;
+    const srData = await ytGet(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=1&key=${YT}`
+    );
+    if (!srData.items?.length) throw new Error('Kanal bulunamadı. Farklı bir isim veya @handle deneyin.');
+    const cid = srData.items[0].snippet.channelId || srData.items[0].id.channelId;
 
-    // Get channel details
-    const chUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${YT_KEY}`;
-    const chData = await ytFetch(chUrl);
-    if (!chData.items || chData.items.length === 0) throw new Error('Kanal detayları alınamadı.');
-    channelData = chData.items[0];
-    showStep(1, 'done');
+    const chData = await ytGet(
+      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${cid}&key=${YT}`
+    );
+    if (!chData.items?.length) throw new Error('Kanal detayları alınamadı.');
+    const ch = chData.items[0];
 
-    // ── STEP 2: Last 10 videos ──
-    showStep(2, 'active');
-    const vUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&type=video&maxResults=10&key=${YT_KEY}`;
-    const vData = await ytFetch(vUrl);
-    const videoTitles = (vData.items || []).map(v => v.snippet.title);
-    showStep(2, 'done');
+    const chName   = ch.snippet.title;
+    const chSubs   = ch.statistics.subscriberCount || '0';
+    const chViews  = ch.statistics.viewCount || '0';
+    const chVids   = ch.statistics.videoCount || '0';
+    const chThumb  = ch.snippet.thumbnails?.medium?.url || ch.snippet.thumbnails?.default?.url || '';
+    const chHandle = ch.snippet.customUrl || '';
+    const chDesc   = (ch.snippet.description || '').slice(0, 400);
+    stepSet('s1', 'done');
 
-    // ── STEP 3: Gemini niche analysis ──
-    showStep(3, 'active');
-    const chName  = channelData.snippet.title;
-    const chSubs  = channelData.statistics.subscriberCount || '0';
-    const chDesc  = channelData.snippet.description || '';
+    /* ── S2: Last 10 videos ── */
+    stepSet('s2', 'active');
+    const vData = await ytGet(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${cid}&order=date&type=video&maxResults=10&key=${YT}`
+    );
+    const titles = (vData.items || []).map(v => v.snippet.title);
+    stepSet('s2', 'done');
 
-    const nichePrompt = `
-Sen bir YouTube içerik analisti uzmanısın.
-Aşağıdaki YouTube kanalı hakkında bilgi verilmiştir:
+    /* ── S3: Single Gemini call ── */
+    stepSet('s3', 'active');
 
-Kanal Adı: ${chName}
-Abone Sayısı: ${formatSubs(chSubs)}
-Açıklama: ${chDesc.slice(0,300)}
-Son 10 Video Başlığı:
-${videoTitles.map((t,i)=>`${i+1}. ${t}`).join('\n')}
+    const prompt = `Sen bir YouTube içerik stratejisti uzmanısın.
 
-Sadece JSON döndür (markdown, açıklama veya başka bir şey YAZMA):
+KANAL BİLGİSİ:
+Ad: ${chName}
+Abone: ~${fmt(chSubs)}
+Açıklama: ${chDesc}
+Son 10 Video:
+${titles.map((t, i) => `${i+1}. ${t}`).join('\n')}
+
+GÖREVİN — Yalnızca JSON döndür, başka hiçbir şey yazma:
+1. Kanalın ana nişini tespit et.
+2. Bu nişte YouTube'da GERÇEKTEN VAR OLAN kanalları 3 gruba ayırarak öner:
+   - "similar_size": ~${fmt(chSubs)} aboneye yakın büyüklükte, aynı nişte 5 gerçek kanal
+   - "niche_leaders": Bu nişin dev/lider kanalları (çok daha büyük), 5 kanal
+   - "rising": Bu nişte yükselen küçük ama büyüyen kanallar, 5 kanal
+
+Her kanalın "name" alanına YouTube'daki tam resmi adını yaz.
+
+JSON FORMATI (başka hiçbir şey yazma, markdown kullanma):
 {
-  "niche": "kanalın ana niş/konusu (Türkçe, 2-4 kelime)",
-  "niche_en": "channel niche in English (2-4 words)",
-  "summary": "kanal hakkında 1-2 cümle Türkçe özet"
+  "niche": "nişin Türkçe adı (2-4 kelime)",
+  "niche_en": "niche in English",
+  "summary": "kanal hakkında 1-2 cümle Türkçe özet",
+  "similar_size": [{"name": "tam kanal adı", "reason": "1 cümle Türkçe açıklama"}],
+  "niche_leaders": [{"name": "tam kanal adı", "reason": "1 cümle Türkçe açıklama"}],
+  "rising": [{"name": "tam kanal adı", "reason": "1 cümle Türkçe açıklama"}]
 }`;
 
-    const nicheRaw = await geminiAsk(nichePrompt);
-    const nicheInfo = parseJSON(nicheRaw);
-    showStep(3, 'done');
+    const raw = await geminiCall(prompt);
+    const ai = JSON.parse(stripFences(raw));
+    stepSet('s3', 'done');
 
-    // ── STEP 4: Find similar channels ──
-    showStep(4, 'active');
+    /* ── S4: Fetch real YouTube data for suggested channels ── */
+    stepSet('s4', 'active');
 
-    // Search YouTube for similar channels
-    const queries = [
-      nicheInfo.niche_en,
-      nicheInfo.niche_en + ' channel',
-      chName + ' similar'
-    ];
-
-    let candidateChannels = [];
-    for (const q of queries) {
-      const sr = await ytFetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(q)}&maxResults=8&key=${YT_KEY}`);
-      if (sr.items) {
-        for (const item of sr.items) {
-          const cid = item.snippet.channelId || item.id.channelId;
-          if (cid !== channelId && !candidateChannels.find(c => c.id === cid)) {
-            candidateChannels.push({ id: cid, title: item.snippet.title });
-          }
-        }
-      }
+    async function fetchCh(name) {
+      try {
+        const sr = await ytGet(
+          `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(name)}&maxResults=1&key=${YT}`
+        );
+        if (!sr.items?.length) return null;
+        const id = sr.items[0].snippet.channelId || sr.items[0].id.channelId;
+        const det = await ytGet(
+          `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${id}&key=${YT}`
+        );
+        if (!det.items?.length) return null;
+        const it = det.items[0];
+        return {
+          id:    it.id,
+          title: it.snippet.title,
+          thumb: it.snippet.thumbnails?.medium?.url || it.snippet.thumbnails?.default?.url || '',
+          subs:  parseInt(it.statistics.subscriberCount || 0),
+          handle: it.snippet.customUrl || ''
+        };
+      } catch { return null; }
     }
 
-    // Get stats for candidates (batch)
-    const ids = candidateChannels.slice(0, 15).map(c => c.id).join(',');
-    const batchUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${ids}&key=${YT_KEY}`;
-    const batchData = await ytFetch(batchUrl);
-    const enriched = (batchData.items || []).map(item => ({
-      id: item.id,
-      title: item.snippet.title,
-      handle: item.snippet.customUrl || '',
-      thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || '',
-      subs: parseInt(item.statistics.subscriberCount || 0),
-      videos: item.statistics.videoCount || 0
-    })).filter(c => c.subs > 100); // filter out empty channels
-
-    showStep(4, 'done');
-
-    // ── STEP 5: Gemini categorize & describe ──
-    showStep(5, 'active');
-    const targetSubs = parseInt(chSubs);
-
-    const catPrompt = `
-Sen bir YouTube analisti uzmanısın. Aşağıdaki ana kanal ve aday kanalları kategorize et.
-
-Ana Kanal: ${chName} (${formatSubs(targetSubs)} abone)
-Ana Kanal Nişi: ${nicheInfo.niche}
-
-Aday Kanallar:
-${enriched.map((c,i) => `${i+1}. ${c.title} - ${formatSubs(c.subs)} abone`).join('\n')}
-
-Bu aday kanalları 3 kategoriye böl:
-1. "similar_size": Ana kanalle benzer abone sayısında (0.3x - 3x arası) VE aynı niş/konu alanında olan kanallar
-2. "niche_leaders": Bu nişin büyük liderleri (ana kanaldan çok daha fazla abonesi olan)
-3. "rising": Bu nişte yükselen/küçük ama büyüyen kanallar (ana kanaldan belirgin şekilde az abonesi olan)
-
-Her kategoride maksimum 4 kanal seç. Alakasız kanalları dahil etme.
-
-SADECE JSON döndür (başka hiçbir şey yazma):
-{
-  "similar_size": [
-    {"title": "...", "reason": "Türkçe 1 cümle, neden benzer olduğunu açıkla"}
-  ],
-  "niche_leaders": [
-    {"title": "...", "reason": "Türkçe 1 cümle, neden lider olduğunu açıkla"}
-  ],
-  "rising": [
-    {"title": "...", "reason": "Türkçe 1 cümle, neden yükselen olduğunu açıkla"}
-  ]
-}`;
-
-    const catRaw = await geminiAsk(catPrompt);
-    const categories = parseJSON(catRaw);
-    showStep(5, 'done');
-
-    // Build channel lookup map
-    const chMap = {};
-    for (const c of enriched) chMap[c.title.toLowerCase()] = c;
-    // Also fuzzy-match
-    function findChannel(title) {
-      const tl = title.toLowerCase();
-      if (chMap[tl]) return chMap[tl];
-      for (const [k,v] of Object.entries(chMap)) {
-        if (k.includes(tl) || tl.includes(k)) return v;
-      }
-      return null;
+    async function enrichGroup(arr) {
+      const res = await Promise.all(arr.map(async item => {
+        const yt = await fetchCh(item.name);
+        return { ...item, yt };
+      }));
+      return res.filter(r => r.yt !== null);
     }
 
-    // ── RENDER ──
+    const [simG, leadG, riseG] = await Promise.all([
+      enrichGroup(ai.similar_size  || []),
+      enrichGroup(ai.niche_leaders || []),
+      enrichGroup(ai.rising        || [])
+    ]);
+    stepSet('s4', 'done');
+
+    /* ── S5: Render ── */
+    stepSet('s5', 'active');
+    await new Promise(r => setTimeout(r, 350));
+    stepSet('s5', 'done');
+
     setTimeout(() => {
-      statusEl.style.display = 'none';
-      renderResults(channelData, videoTitles, nicheInfo, categories, findChannel);
+      document.getElementById('progress').style.display = 'none';
+      render(ch, chThumb, chHandle, chSubs, chViews, chVids, titles, ai, simG, leadG, riseG);
     }, 400);
 
-  } catch(err) {
-    if (err.message === 'QUOTA') {
-      [3,4,5].forEach(n => showStep(n, 'error-step'));
-      showError('Gemini API kota limitine ulaşıldı. Lütfen birkaç dakika bekleyip tekrar deneyin. (429 Quota Exceeded)');
+  } catch (e) {
+    const active = document.querySelector('.step.active');
+    if (active) { active.className = 'step err'; active.querySelector('.sn').textContent = '✕'; }
+    if (e.message === 'QUOTA') {
+      showErr('Kota limitine ulaşıldı, 1 dakika bekleyip tekrar deneyin.');
     } else {
-      const step = document.querySelector('.step.active');
-      if (step) step.className = 'step error-step';
-      showError('Bir hata oluştu: ' + err.message);
+      showErr(e.message || 'Bilinmeyen bir hata oluştu.');
     }
-    document.getElementById('searchBtn').disabled = false;
   }
 }
 
-function renderResults(channelData, videoTitles, nicheInfo, categories, findChannel) {
-  const snippet = channelData.snippet;
-  const stats   = channelData.statistics;
-  const thumb   = snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url || '';
-
-  // Target card
-  document.getElementById('targetCard').innerHTML = `
-    <div class="target-card">
-      <img class="target-thumb" src="${thumb}" alt="${snippet.title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect width=%2280%22 height=%2280%22 fill=%22%23141d2b%22/><text x=%2240%22 y=%2248%22 font-size=%2228%22 text-anchor=%22middle%22 fill=%22%236b7c93%22>📺</text></svg>'">
-      <div class="target-info">
-        <div class="target-name">${snippet.title}</div>
-        <div class="target-handle">${snippet.customUrl || ''}</div>
-        <div class="target-meta">
-          <div class="meta-pill"><span class="icon">👥</span> ${formatSubs(stats.subscriberCount || 0)} abone</div>
-          <div class="meta-pill"><span class="icon">🎬</span> ${parseInt(stats.videoCount||0).toLocaleString()} video</div>
-          <div class="meta-pill"><span class="icon">👁️</span> ${formatViews(stats.viewCount || 0)} görüntülenme</div>
+function render(ch, thumb, handle, subs, views, vids, titles, ai, sim, lead, rise) {
+  /* Hero */
+  document.getElementById('heroSlot').innerHTML = `
+    <div class="hero">
+      <div class="hero-inner">
+        <img class="hero-thumb" src="${esc(thumb)}" alt="${esc(ch.snippet.title)}"
+          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2288%22 height=%2288%22><rect width=%2288%22 height=%2288%22 fill=%22%23111827%22 rx=%2244%22/><text x=%2244%22 y=%2256%22 font-size=%2232%22 text-anchor=%22middle%22 fill=%22%236b7a99%22>📺</text></svg>'">
+        <div class="hero-info">
+          <div class="hero-name">${esc(ch.snippet.title)}</div>
+          ${handle ? `<div class="hero-handle">${esc(handle)}</div>` : ''}
+          <div class="stats-row">
+            <div class="stat">👥 <strong>${fmt(subs)}</strong> abone</div>
+            <div class="stat">🎬 <strong>${parseInt(vids).toLocaleString()}</strong> video</div>
+            <div class="stat">👁️ <strong>${fmt(views)}</strong> görüntülenme</div>
+          </div>
+          <div class="niche-pill">🎯 ${esc(ai.niche)}</div>
+          <p class="hero-summary">${esc(ai.summary)}</p>
         </div>
-        <div class="niche-tag">🎯 ${nicheInfo.niche}</div>
-        <p style="margin-top:10px;font-size:13px;color:#8a9ab5;line-height:1.6;">${nicheInfo.summary}</p>
       </div>
     </div>`;
 
-  // Videos section
-  document.getElementById('videosSection').innerHTML = `
-    <div class="videos-section">
-      <div class="section-header">
-        <div class="section-title">Son Videolar</div>
-        <div class="section-line"></div>
+  /* Videos */
+  document.getElementById('videosSlot').innerHTML = `
+    <div class="section">
+      <div class="sec-hd">
+        <div class="sec-ttl">Son Yüklenen Videolar</div>
+        <span class="sec-badge bm">${titles.length} video</span>
+        <div class="sec-line"></div>
       </div>
-      <div class="videos-list">
-        ${videoTitles.map((t,i)=>`
-          <div class="video-item">
-            <div class="video-num">${i+1}</div>
-            <div class="video-dot"></div>
-            <div class="video-title">${escHtml(t)}</div>
+      <div class="vlist">
+        ${titles.map((t,i) => `
+          <div class="vrow">
+            <div class="vn">${i+1}</div>
+            <div class="vbar"></div>
+            <div class="vt">${esc(t)}</div>
           </div>`).join('')}
       </div>
     </div>`;
 
-  // Groups section
+  /* Channel groups */
   const groups = [
-    { key:'similar_size', label:'Benzer Kanallar', badge:'badge-similar', cls:'similar', emoji:'⚖️', desc:'Aynı büyüklükte, aynı niş' },
-    { key:'niche_leaders', label:'Niş Liderleri', badge:'badge-leader', cls:'leader', emoji:'👑', desc:'Bu alanın büyük oyuncuları' },
-    { key:'rising', label:'Yükselen Kanallar', badge:'badge-rising', cls:'rising', emoji:'🚀', desc:'İzlenmeye değer yeni isimler' },
+    { data: sim,  title: 'Benzer Kanallar',  badge: 'bp', cls: 'ccs', tag: '⚖️ Benzer',   desc: 'Aynı büyüklük & niş' },
+    { data: lead, title: 'Niş Liderleri',     badge: 'bg', cls: 'ccl', tag: '👑 Lider',    desc: 'Alanın devleri' },
+    { data: rise, title: 'Yükselen Kanallar', badge: 'bgr',cls: 'ccr', tag: '🚀 Yükselen', desc: 'Büyümeye devam edenler' },
   ];
 
-  let groupsHtml = '';
+  let html = '';
   for (const g of groups) {
-    const items = categories[g.key] || [];
-    if (items.length === 0) continue;
-    const cards = items.map(item => {
-      const ch = findChannel(item.title);
-      const tImg = ch?.thumbnail || '';
-      const sSubs = ch ? formatSubs(ch.subs) + ' abone' : '';
+    if (!g.data.length) continue;
+    const cards = g.data.map(item => {
+      const t = item.yt?.thumb || '';
+      const n = item.yt?.title || item.name;
+      const s = item.yt ? fmt(item.yt.subs) + ' abone' : '';
       return `
         <div class="ch-card ${g.cls}">
-          <div class="ch-type-badge">${g.emoji} ${g.label.split(' ')[0]}</div>
-          <img class="ch-thumb" src="${tImg}" alt="${escHtml(item.title)}"
-            onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2252%22 height=%2252%22><rect width=%2252%22 height=%2252%22 fill=%22%23141d2b%22 rx=%2226%22/><text x=%2226%22 y=%2234%22 font-size=%2220%22 text-anchor=%22middle%22 fill=%22%236b7c93%22>📺</text></svg>'">
-          <div class="ch-info">
-            <div class="ch-name">${escHtml(item.title)}</div>
-            ${sSubs ? `<div class="ch-subs"><strong>${sSubs}</strong></div>` : ''}
-            <div class="ch-desc">${escHtml(item.reason)}</div>
+          <div class="ch-tag">${g.tag}</div>
+          <img class="ch-thumb" src="${esc(t)}" alt="${esc(n)}"
+            onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22><rect width=%2250%22 height=%2250%22 fill=%22%23111827%22 rx=%2225%22/><text x=%2225%22 y=%2232%22 font-size=%2218%22 text-anchor=%22middle%22 fill=%22%236b7a99%22>📺</text></svg>'">
+          <div class="ch-body">
+            <div class="ch-name">${esc(n)}</div>
+            ${s ? `<div class="ch-subs"><strong>${s}</strong></div>` : ''}
+            <div class="ch-desc">${esc(item.reason)}</div>
           </div>
         </div>`;
     }).join('');
 
-    groupsHtml += `
-      <div class="group-section">
-        <div class="section-header">
-          <div class="section-title">${g.label}</div>
-          <span class="section-badge ${g.badge}">${g.desc}</span>
-          <div class="section-line"></div>
+    html += `
+      <div class="section">
+        <div class="sec-hd">
+          <div class="sec-ttl">${g.title}</div>
+          <span class="sec-badge ${g.badge}">${g.desc}</span>
+          <div class="sec-line"></div>
         </div>
-        <div class="channels-grid">${cards}</div>
+        <div class="ch-grid">${cards}</div>
       </div>`;
   }
 
-  document.getElementById('groupsSection').innerHTML = groupsHtml;
-
-  const resultsEl = document.getElementById('results');
-  resultsEl.style.display = 'block';
-  document.getElementById('searchBtn').disabled = false;
-  resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function formatViews(n) {
-  n = parseInt(n);
-  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
-  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
-  return n;
-}
-
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  document.getElementById('groupsSlot').innerHTML = html;
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
 </body>
