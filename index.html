@@ -550,41 +550,58 @@ JSON FORMATI (başka hiçbir şey yazma, markdown kullanma):
     /* ── S4: Fetch real YouTube data for suggested channels ── */
     stepSet('s4', 'active');
 
-    async function fetchCh(name) {
-      try {
-        const sr = await ytGet(
-          `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(name)}&maxResults=1&key=${YT}`
-        );
-        if (!sr.items?.length) return null;
-        const id = sr.items[0].snippet.channelId || sr.items[0].id.channelId;
-        const det = await ytGet(
-          `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${id}&key=${YT}`
-        );
-        if (!det.items?.length) return null;
-        const it = det.items[0];
-        return {
-          id:    it.id,
+    async function fetchChBatch(names) {
+      // Step 1: search all names in parallel (max 5 at a time to avoid quota)
+      const chunks = [];
+      for(let i=0;i<names.length;i+=5) chunks.push(names.slice(i,i+5));
+      const idMap = {};
+      for(const chunk of chunks){
+        await Promise.all(chunk.map(async name => {
+          try{
+            const sr = await ytGet(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(name)}&maxResults=1&key=${YT}`);
+            if(sr.items?.length){
+              const id = sr.items[0].snippet.channelId || sr.items[0].id.channelId;
+              idMap[name] = id;
+            }
+          }catch{}
+        }));
+      }
+      // Step 2: fetch all channel details in ONE batch call
+      const ids = Object.values(idMap).join(',');
+      if(!ids) return {};
+      const det = await ytGet(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${ids}&key=${YT}`);
+      const byId = {};
+      for(const it of (det.items||[])){
+        byId[it.id] = {
+          id: it.id,
           title: it.snippet.title,
           thumb: it.snippet.thumbnails?.medium?.url || it.snippet.thumbnails?.default?.url || '',
-          subs:  parseInt(it.statistics.subscriberCount || 0),
-          handle: it.snippet.customUrl || ''
+          subs: parseInt(it.statistics?.subscriberCount||0),
+          handle: it.snippet.customUrl||''
         };
-      } catch { return null; }
+      }
+      const result = {};
+      for(const [name,id] of Object.entries(idMap)){
+        if(byId[id]) result[name] = byId[id];
+      }
+      return result;
     }
 
-    async function enrichGroup(arr) {
-      const res = await Promise.all(arr.map(async item => {
-        const yt = await fetchCh(item.name);
-        return { ...item, yt };
-      }));
-      return res.filter(r => r.yt !== null);
+    const allNames = [
+      ...(ai.similar_size||[]),
+      ...(ai.niche_leaders||[]),
+      ...(ai.rising||[])
+    ].map(i=>i.name);
+
+    const ytDataMap = await fetchChBatch(allNames);
+
+    function enrichGroup(arr){
+      return arr.map(item=>({...item, yt: ytDataMap[item.name]||null})).filter(r=>r.yt!==null);
     }
 
-    const [simG, leadG, riseG] = await Promise.all([
-      enrichGroup(ai.similar_size  || []),
-      enrichGroup(ai.niche_leaders || []),
-      enrichGroup(ai.rising        || [])
-    ]);
+    const simG  = enrichGroup(ai.similar_size  || []);
+    const leadG = enrichGroup(ai.niche_leaders || []);
+    const riseG = enrichGroup(ai.rising        || []);
     stepSet('s4', 'done');
 
     /* ── S5: Render ── */
