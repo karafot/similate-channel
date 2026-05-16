@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Kanal Analizörü</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--surface:#111;--surface2:#1a1a1a;--border:#222;--border2:#2e2e2e;
+  --text:#e8e8e8;--muted:#666;--sub:#999;
+  --purple:#a78bfa;--purple-bg:#1e1b4b;--purple-dim:#7c3aed22;
+  --gold:#fbbf24;--gold-bg:#1c1917;
+  --green:#4ade80;--green-bg:#052e16;
+  --red:#f87171;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif}
+body{display:flex;flex-direction:column;align-items:center;padding:2rem 1rem 4rem}
+.header{text-align:center;margin-bottom:2.5rem;max-width:600px}
+.logo{font-size:13px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+.logo span{color:var(--red)}
+h1{font-size:32px;font-weight:600;color:#fff;line-height:1.2;margin-bottom:.5rem}
+h1 em{font-style:normal;color:var(--purple)}
+.subtitle{font-size:14px;color:var(--muted);line-height:1.6}
+.search-wrap{width:100%;max-width:560px;margin-bottom:2rem}
+.search-box{display:flex;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;transition:border-color .2s}
+.search-box:focus-within{border-color:#444}
+.search-box input{flex:1;background:transparent;border:none;outline:none;padding:14px 18px;font-size:15px;color:var(--text);font-family:inherit}
+.search-box input::placeholder{color:var(--muted)}
+.search-box button{background:#fff;color:#000;border:none;padding:14px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;white-space:nowrap}
+.search-box button:hover{background:#e5e5e5}
+.search-box button:disabled{background:#1f1f1f;color:#444;cursor:not-allowed}
+.status{font-size:13px;color:var(--muted);min-height:20px;text-align:center;margin-bottom:.5rem;display:flex;align-items:center;justify-content:center;gap:8px}
+.status.loading{color:var(--purple)}
+.status.error{color:var(--red)}
+.spinner{width:13px;height:13px;border:2px solid #333;border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.results{width:100%;max-width:660px}
+.channel-hero{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px;margin-bottom:2rem;display:flex;gap:16px;align-items:center}
+.channel-hero img{width:64px;height:64px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border2)}
+.hero-avatar{width:64px;height:64px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.hero-info h2{font-size:18px;font-weight:600;color:#fff}
+.hero-niche{display:inline-block;margin-top:4px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--purple);background:var(--purple-dim);padding:3px 10px;border-radius:20px}
+.hero-subs{font-size:13px;color:var(--sub);margin-top:6px}
+.hero-link{display:inline-block;margin-top:8px;font-size:12px;color:var(--purple);text-decoration:none;opacity:.8}
+.hero-link:hover{opacity:1}
+.group{margin-bottom:1.75rem}
+.group-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.group-badge{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:20px;white-space:nowrap}
+.badge-similar{background:var(--purple-bg);color:#a5b4fc}
+.badge-leader{background:var(--gold-bg);color:var(--gold)}
+.badge-rising{background:var(--green-bg);color:var(--green)}
+.group-line{flex:1;height:1px;background:var(--border)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;gap:14px;align-items:flex-start;margin-bottom:8px;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card-thumb{width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.card-avatar{width:44px;height:44px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--muted)}
+.card-body{flex:1;min-width:0}
+.card-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-subs{font-size:12px;color:var(--muted);margin-top:2px}
+.card-desc{font-size:13px;color:var(--sub);margin-top:7px;line-height:1.55}
+.card-link{display:inline-block;margin-top:6px;font-size:11px;color:var(--purple);text-decoration:none;opacity:.7}
+.card-link:hover{opacity:1}
+.empty{text-align:center;padding:4rem 1rem;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo"><span>▶</span> YouTube Kanal Analizörü</div>
+  <h1>Benzer kanalları <em>keşfet</em></h1>
+  <p class="subtitle">Kanal adı veya @handle gir — yapay zeka nişi tespit eder, benzer kanalları bulur ve gruplar.</p>
+</div>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <input id="q" type="text" placeholder="Örn: MrBeast, @mkbhd, Barış Özcan..." />
+    <button id="btn" onclick="analyze()">Analiz Et</button>
+  </div>
+</div>
+<div class="status" id="status"></div>
+<div class="results" id="results"></div>
+
+<script>
+const YT_KEY = 'AIzaSyD_I0K-QSgYbk5bMXa0OjTARgUGXICD1G8';
+const GM_KEY = 'AIzaSyClaTlNjf5f0f780mPH53bMvMdaSqUJrIA';
+const GM_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GM_KEY}`;
+
+function setStatus(msg, cls=''){
+  const el = document.getElementById('status');
+  el.className = 'status ' + cls;
+  el.innerHTML = cls==='loading' ? `<span class="spinner"></span>${msg}` : msg;
+}
+
+function fmtSubs(n){
+  n = parseInt(n)||0;
+  if(n>=1e9) return (n/1e9).toFixed(1)+'B';
+  if(n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(1)+'K';
+  return ''+n;
+}
+
+async function ytGet(path){
+  const r = await fetch('https://www.googleapis.com/youtube/v3/'+path);
+  if(!r.ok) throw new Error('YouTube API hatası: '+r.status);
+  return r.json();
+}
+
+async function gemini(prompt){
+  const r = await fetch(GM_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({contents:[{parts:[{text: prompt}]}]})
+  });
+  if(!r.ok){const t=await r.text(); throw new Error('Gemini API: '+t.slice(0,150));}
+  const d = await r.json();
+  let txt = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return txt.replace(/```json|```/g,'').trim();
+}
+
+async function getChannel(query){
+  let data;
+  if(query.startsWith('@')){
+    data = await ytGet(`channels?part=snippet,statistics&forHandle=${encodeURIComponent(query)}&key=${YT_KEY}`);
+  } else {
+    const s = await ytGet(`search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=1&key=${YT_KEY}`);
+    if(!s.items?.length) throw new Error('Kanal bulunamadı');
+    const id = s.items[0].snippet.channelId || s.items[0].id.channelId;
+    data = await ytGet(`channels?part=snippet,statistics&id=${id}&key=${YT_KEY}`);
+  }
+  if(!data.items?.length) throw new Error('Kanal bulunamadı');
+  return data.items[0];
+}
+
+async function getVideos(channelId){
+  try{
+    const s = await ytGet(`search?part=snippet&channelId=${channelId}&order=date&maxResults=8&type=video&key=${YT_KEY}`);
+    return (s.items||[]).map(v=>v.snippet.title);
+  }catch(e){ return []; }
+}
+
+async function searchChannels(term, max=6){
+  try{
+    const s = await ytGet(`search?part=snippet&type=channel&q=${encodeURIComponent(term)}&maxResults=${max}&key=${YT_KEY}`);
+    if(!s.items?.length) return [];
+    const ids = s.items.map(i=>i.snippet.channelId||i.id.channelId).join(',');
+    const d = await ytGet(`channels?part=snippet,statistics&id=${ids}&key=${YT_KEY}`);
+    return d.items||[];
+  }catch(e){ return []; }
+}
+
+async function analyze(){
+  const q = document.getElementById('q').value.trim();
+  if(!q) return;
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  document.getElementById('results').innerHTML = '';
+
+  try{
+    setStatus('Kanal aranıyor...','loading');
+    const ch = await getChannel(q);
+    const chId = ch.id;
+    const chThumb = ch.snippet.thumbnails?.medium?.url || ch.snippet.thumbnails?.default?.url || '';
+    const chSubs = parseInt(ch.statistics?.subscriberCount)||0;
+
+    setStatus('Son videolar yükleniyor...','loading');
+    const videos = await getVideos(chId);
+
+    setStatus('Niş analizi yapılıyor...','loading');
+    const nicheRaw = await gemini(`Sen bir YouTube niş analisti asistanısın. Sana verilen kanal bilgilerine bakarak nişi tespit et.
+SADECE JSON döndür, başka hiçbir şey yazma:
+{"niche":"Türkçe 2-4 kelime niş açıklaması","nicheEn":"English 2-4 word niche","terms":["ingilizce arama terimi 1","ingilizce arama terimi 2","ingilizce arama terimi 3"]}
+
+Kanal: ${ch.snippet.title}
+Abone: ${fmtSubs(chSubs)}
+Açıklama: ${ch.snippet.description?.slice(0,200)||''}
+Son videolar: ${videos.join(' | ')}`);
+
+    let nicheData;
+    try{ nicheData = JSON.parse(nicheRaw); }
+    catch{ nicheData = {niche:'İçerik Üretimi', nicheEn:'content creation', terms:['youtube creator','content creator','youtube channel']}; }
+
+    setStatus(`"${nicheData.niche}" nişinde kanallar aranıyor...`,'loading');
+    const terms = nicheData.terms || [];
+    const allResults = await Promise.all([
+      searchChannels(terms[0]||nicheData.nicheEn, 6),
+      searchChannels(terms[1]||nicheData.nicheEn+' youtube', 5),
+      searchChannels(terms[2]||nicheData.nicheEn+' channel', 5),
+    ]);
+
+    const seen = new Set([chId]);
+    const candidates = [];
+    for(const arr of allResults){
+      for(const c of arr){
+        if(!seen.has(c.id)){ seen.add(c.id); candidates.push(c); }
+      }
+    }
+
+    setStatus('Kanallar gruplandırılıyor...','loading');
+    const groupRaw = await gemini(`Sen bir YouTube kanal analisti asistanısın.
+Ana kanal: ${ch.snippet.title} (${fmtSubs(chSubs)} abone) — Niş: ${nicheData.niche}
+Aday kanallar: ${JSON.stringify(candidates.slice(0,15).map(c=>({id:c.id,title:c.snippet.title,subs:parseInt(c.statistics?.subscriberCount)||0,thumb:c.snippet.thumbnails?.medium?.url||c.snippet.thumbnails?.default?.url||''})))}
+
+Bu kanalları 3 gruba ayır. SADECE JSON döndür, başka hiçbir şey yazma:
+{
+  "similar":[{"id":"...","title":"...","subscriberCount":"...","thumbnail":"...","reason":"Türkçe 1-2 cümle neden benzer olduğunu açıkla"}],
+  "leaders":[...aynı format...],
+  "rising":[...aynı format...]
+}
+similar = ana kanala yakın büyüklükte benzer niş kanallar (max 4)
+leaders = niş liderleri, çok daha büyük ve tanınmış kanallar (max 3)
+rising = küçük ama gelecek vaat eden yükselen kanallar (max 3)
+Her kanal için reason alanı Türkçe olmalı. Sadece gerçekten uygun kanalları ekle.`);
+
+    let groups;
+    try{
+      const m = groupRaw.match(/\{[\s\S]*\}/);
+      groups = m ? JSON.parse(m[0]) : {similar:[],leaders:[],rising:[]};
+    }catch{ groups = {similar:[],leaders:[],rising:[]}; }
+
+    const byId = {};
+    for(const c of candidates) byId[c.id] = c;
+
+    setStatus('');
+    render(ch, chThumb, chSubs, nicheData, groups, byId);
+
+  }catch(e){
+    setStatus('Hata: '+e.message,'error');
+    console.error(e);
+  }
+  btn.disabled = false;
+}
+
+function makeCard(item, byId){
+  const ch = byId[item.id];
+  const thumb = item.thumbnail || ch?.snippet?.thumbnails?.medium?.url || ch?.snippet?.thumbnails?.default?.url || '';
+  const subs = item.subscriberCount || ch?.statistics?.subscriberCount || '';
+  const name = item.title || ch?.snippet?.title || 'Bilinmiyor';
+  const url = 'https://youtube.com/channel/'+item.id;
+  return `<div class="card">
+    ${thumb ? `<img class="card-thumb" src="${thumb}" alt="" loading="lazy" onerror="this.style.display='none'">` : `<div class="card-avatar">▶</div>`}
+    <div class="card-body">
+      <div class="card-name">${name}</div>
+      ${subs ? `<div class="card-subs">👥 ${fmtSubs(subs)} abone</div>` : ''}
+      ${item.reason ? `<div class="card-desc">${item.reason}</div>` : ''}
+      <a class="card-link" href="${url}" target="_blank">Kanala git ↗</a>
+    </div>
+  </div>`;
+}
+
+function render(ch, thumb, subs, nicheData, groups, byId){
+  const url = 'https://youtube.com/channel/'+ch.id;
+  let h = `<div class="channel-hero">
+    ${thumb ? `<img src="${thumb}" alt="" onerror="this.style.display='none'">` : `<div class="hero-avatar">▶</div>`}
+    <div class="hero-info">
+      <h2>${ch.snippet.title}</h2>
+      <span class="hero-niche">${nicheData.niche}</span>
+      <div class="hero-subs">👥 ${fmtSubs(subs)} abone</div>
+      <a class="hero-link" href="${url}" target="_blank">Kanala git ↗</a>
+    </div>
+  </div>`;
+
+  const s = groups.similar||[], l = groups.leaders||[], r = groups.rising||[];
+
+  if(s.length){
+    h += `<div class="group"><div class="group-header"><span class="group-badge badge-similar">≈ Benzer Büyüklük</span><span class="group-line"></span></div>`;
+    s.forEach(i=>{ h += makeCard(i,byId); });
+    h += '</div>';
+  }
+  if(l.length){
+    h += `<div class="group"><div class="group-header"><span class="group-badge badge-leader">🏆 Niş Liderleri</span><span class="group-line"></span></div>`;
+    l.forEach(i=>{ h += makeCard(i,byId); });
+    h += '</div>';
+  }
+  if(r.length){
+    h += `<div class="group"><div class="group-header"><span class="group-badge badge-rising">📈 Yükselen Kanallar</span><span class="group-line"></span></div>`;
+    r.forEach(i=>{ h += makeCard(i,byId); });
+    h += '</div>';
+  }
+  if(!s.length && !l.length && !r.length){
+    h += `<div class="empty">Bu niş için benzer kanal bulunamadı.</div>`;
+  }
+  document.getElementById('results').innerHTML = h;
+}
+
+document.getElementById('q').addEventListener('keydown', e=>{ if(e.key==='Enter') analyze(); });
+</script>
+</body>
+</html>
