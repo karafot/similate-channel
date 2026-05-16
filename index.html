@@ -3,710 +3,950 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YouTube Kanal Analizörü</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<title>YouTube Kanal Analiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --bg:       #07090f;
-  --surface:  #0d1117;
-  --card:     #111827;
-  --border:   #1f2937;
-  --border2:  #2d3748;
-  --text:     #f0f4ff;
-  --muted:    #6b7a99;
-  --purple:   #a78bfa;
-  --purple-d: #7c3aed;
-  --gold:     #fbbf24;
-  --gold-d:   #d97706;
-  --green:    #34d399;
-  --green-d:  #059669;
-  --red:      #f87171;
-}
+  :root {
+    --bg: #07090f;
+    --bg2: #0d1117;
+    --bg3: #111827;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --purple: #a78bfa;
+    --gold: #fbbf24;
+    --green: #34d399;
+    --red: #f87171;
+    --purple-dim: rgba(167,139,250,0.12);
+    --gold-dim: rgba(251,191,36,0.12);
+    --green-dim: rgba(52,211,153,0.12);
+  }
 
-html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Outfit', sans-serif;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(167,139,250,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(167,139,250,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image:
-    linear-gradient(rgba(124,58,237,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124,58,237,0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
-  pointer-events: none; z-index: 0;
-}
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-orb-1 {
+    width: 500px; height: 500px;
+    background: rgba(167,139,250,0.08);
+    top: -100px; left: -100px;
+  }
+  .glow-orb-2 {
+    width: 400px; height: 400px;
+    background: rgba(251,191,36,0.05);
+    bottom: -100px; right: -100px;
+  }
 
-.glow1 {
-  position: fixed; pointer-events: none; z-index: 0;
-  width: 700px; height: 500px; border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(124,58,237,0.1) 0%, transparent 70%);
-  top: -150px; left: -150px; filter: blur(40px);
-}
-.glow2 {
-  position: fixed; pointer-events: none; z-index: 0;
-  width: 500px; height: 400px; border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(217,119,6,0.07) 0%, transparent 70%);
-  top: 300px; right: -100px; filter: blur(60px);
-}
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
 
-.wrap {
-  position: relative; z-index: 1;
-  max-width: 960px; margin: 0 auto;
-  padding: 0 20px 100px;
-}
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    animation: fadeDown 0.6s ease both;
+  }
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--purple-dim);
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--purple);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .header-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--purple);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  h1 {
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 14px;
+  }
+  h1 span { color: var(--purple); }
+  .header p {
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 400;
+    max-width: 440px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
 
-/* HEADER */
-.header { padding: 64px 0 52px; text-align: center; }
+  /* Search */
+  .search-card {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .search-row {
+    display: flex;
+    gap: 12px;
+  }
+  .search-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus {
+    border-color: var(--purple);
+    box-shadow: 0 0 0 3px rgba(167,139,250,0.12);
+  }
+  .search-btn {
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 28px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+  .search-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .search-btn:active { transform: translateY(0); }
+  .search-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .search-hint {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .search-hint code {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--purple);
+  }
 
-.eyebrow {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--purple);
-  background: rgba(167,139,250,0.08);
-  border: 1px solid rgba(167,139,250,0.2);
-  border-radius: 100px; padding: 6px 16px;
-  margin-bottom: 28px;
-}
-.eyebrow-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--purple);
-  animation: blink 2s ease-in-out infinite;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+  /* Progress */
+  #progress {
+    display: none;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.4s ease both;
+  }
+  .progress-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .step-list { display: flex; flex-direction: column; gap: 10px; }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: all 0.3s;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .step.active {
+    background: var(--purple-dim);
+    border-color: rgba(167,139,250,0.2);
+    color: var(--text);
+  }
+  .step.done {
+    color: var(--green);
+  }
+  .step-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  .step.active .step-icon {
+    background: var(--purple-dim);
+    border-color: var(--purple);
+    color: var(--purple);
+    animation: spin 1s linear infinite;
+  }
+  .step.done .step-icon {
+    background: rgba(52,211,153,0.12);
+    border-color: var(--green);
+    color: var(--green);
+  }
 
-h1 {
-  font-size: clamp(40px, 7vw, 74px);
-  font-weight: 800;
-  line-height: 1.0;
-  letter-spacing: -0.04em;
-  margin-bottom: 18px;
-}
-h1 em {
-  font-style: normal;
-  background: linear-gradient(135deg, var(--purple) 0%, #e879f9 50%, var(--gold) 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+  /* Error */
+  .error-box {
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.25);
+    border-radius: 14px;
+    padding: 18px 22px;
+    color: var(--red);
+    font-size: 14px;
+    margin-bottom: 24px;
+    display: none;
+    animation: fadeUp 0.3s ease both;
+  }
 
-.tagline {
-  font-size: 16px; font-weight: 300;
-  color: var(--muted); line-height: 1.7;
-  max-width: 420px; margin: 0 auto 40px;
-}
+  /* Results */
+  #results { display: none; animation: fadeUp 0.5s ease both; }
 
-/* SEARCH */
-.search-outer { max-width: 580px; margin: 0 auto; }
+  /* Hero card */
+  .hero-card {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 28px;
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+  .hero-thumb {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border2);
+    flex-shrink: 0;
+    background: var(--bg3);
+  }
+  .hero-thumb-placeholder {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple-dim), var(--bg3));
+    border: 2px solid var(--border2);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+  }
+  .hero-info { flex: 1; min-width: 0; }
+  .hero-name {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hero-niche {
+    display: inline-block;
+    background: var(--purple-dim);
+    border: 1px solid rgba(167,139,250,0.25);
+    color: var(--purple);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+  }
+  .hero-summary {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.65;
+    margin-bottom: 16px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 600;
+  }
+  .stat-subs .stat-value { color: var(--purple); }
+  .stat-views .stat-value { color: var(--gold); }
+  .stat-videos .stat-value { color: var(--green); }
 
-.search-field {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--card);
-  border: 1.5px solid var(--border2);
-  border-radius: 16px;
-  padding: 8px 8px 8px 22px;
-  transition: border-color 0.25s, box-shadow 0.25s;
-  margin-bottom: 14px;
-}
-.search-field:focus-within {
-  border-color: var(--purple);
-  box-shadow: 0 0 0 4px rgba(167,139,250,0.1), 0 16px 48px rgba(0,0,0,0.5);
-}
-.s-icon { font-size: 18px; flex-shrink: 0; }
+  /* Section */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .section-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .badge-purple { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(167,139,250,0.25); }
+  .badge-gold { background: var(--gold-dim); color: var(--gold); border: 1px solid rgba(251,191,36,0.25); }
+  .badge-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
+  .section-desc { font-size: 13px; color: var(--muted); }
 
-#channelInput {
-  flex: 1; background: none; border: none; outline: none;
-  color: var(--text); font-family: 'Outfit', sans-serif;
-  font-size: 15px; font-weight: 400; padding: 10px 0;
-  caret-color: var(--purple);
-}
-#channelInput::placeholder { color: var(--muted); }
+  /* Channel grid */
+  .channel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .channel-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+    animation: fadeUp 0.4s ease both;
+  }
+  .channel-card:hover {
+    border-color: var(--border2);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .channel-card-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .channel-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid var(--border2);
+    background: var(--bg3);
+    flex-shrink: 0;
+  }
+  .channel-avatar-placeholder {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--bg3);
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .channel-meta { flex: 1; min-width: 0; }
+  .channel-name {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  .channel-subs {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .channel-reason {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+  .channel-card.loading {
+    opacity: 0.5;
+    pointer-events: none;
+  }
 
-#analyzeBtn {
-  background: linear-gradient(135deg, var(--purple-d), #9333ea);
-  color: #fff; border: none; border-radius: 10px;
-  padding: 13px 26px;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 700; font-size: 13px;
-  letter-spacing: 0.04em; text-transform: uppercase;
-  cursor: pointer; white-space: nowrap;
-  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-  box-shadow: 0 4px 20px rgba(124,58,237,0.4);
-}
-#analyzeBtn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 28px rgba(124,58,237,0.5); }
-#analyzeBtn:active:not(:disabled) { transform: translateY(0); }
-#analyzeBtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+  /* Divider */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
 
-.quick {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  justify-content: center; font-size: 13px; color: var(--muted);
-}
-.ql { font-weight: 400; }
-.qc {
-  background: var(--card); border: 1px solid var(--border2);
-  border-radius: 20px; padding: 4px 14px;
-  font-size: 12px; color: var(--text); cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
-}
-.qc:hover { border-color: var(--purple); color: var(--purple); }
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 
-/* PROGRESS */
-#progress { display: none; max-width: 520px; margin: 44px auto 0; }
-
-.steps { display: flex; flex-direction: column; gap: 6px; }
-.step {
-  display: flex; align-items: center; gap: 14px;
-  padding: 13px 18px;
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 12px; font-size: 14px; color: var(--muted);
-  transition: all 0.35s;
-}
-.step.active { border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.06); color: var(--text); }
-.step.done   { border-color: rgba(52,211,153,0.35);  background: rgba(52,211,153,0.05);  color: var(--green); }
-.step.err    { border-color: rgba(248,113,113,0.4);  background: rgba(248,113,113,0.05); color: var(--red); }
-
-.sn {
-  width: 26px; height: 26px; border-radius: 50%;
-  border: 1.5px solid var(--border2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; flex-shrink: 0;
-  background: var(--surface); transition: all 0.3s;
-}
-.step.active .sn { border-color: var(--purple); }
-.step.done .sn   { border-color: var(--green); background: var(--green); color: #000; }
-.step.err .sn    { border-color: var(--red); background: var(--red); color: #fff; }
-
-.spin {
-  width: 14px; height: 14px;
-  border: 2px solid rgba(167,139,250,0.25);
-  border-top-color: var(--purple);
-  border-radius: 50%;
-  animation: rot 0.7s linear infinite;
-}
-@keyframes rot { to { transform: rotate(360deg); } }
-
-/* ERROR */
-#errBox {
-  display: none; max-width: 520px; margin: 24px auto 0;
-  background: rgba(248,113,113,0.08);
-  border: 1px solid rgba(248,113,113,0.25);
-  border-radius: 14px; padding: 16px 20px;
-  font-size: 14px; color: var(--red); line-height: 1.6;
-}
-
-/* RESULTS */
-#results { display: none; }
-@keyframes riseIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-
-/* TARGET HERO */
-.hero {
-  position: relative; overflow: hidden;
-  background: var(--card); border: 1px solid var(--border2);
-  border-radius: 24px; padding: 32px;
-  margin-bottom: 44px;
-  animation: riseIn 0.5s ease;
-}
-.hero::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(124,58,237,0.08) 0%, transparent 55%);
-  pointer-events: none;
-}
-.hero::after {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--purple-d), #e879f9, var(--gold));
-}
-
-.hero-inner { display: flex; align-items: flex-start; gap: 24px; position: relative; z-index: 1; }
-
-.hero-thumb {
-  width: 88px; height: 88px; border-radius: 50%;
-  object-fit: cover; flex-shrink: 0;
-  border: 3px solid var(--border2);
-  background: var(--surface);
-}
-.hero-info { flex: 1; }
-.hero-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
-.hero-handle { font-size: 14px; color: var(--purple); margin-bottom: 14px; }
-
-.stats-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-.stat {
-  display: flex; align-items: center; gap: 7px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 100px; padding: 6px 16px;
-  font-size: 13px; font-weight: 500;
-}
-
-.niche-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(251,191,36,0.1);
-  border: 1px solid rgba(251,191,36,0.25);
-  color: var(--gold); border-radius: 100px;
-  padding: 5px 16px; font-size: 12px; font-weight: 700;
-  letter-spacing: 0.07em; text-transform: uppercase;
-}
-.hero-summary {
-  margin-top: 12px; font-size: 14px; color: #7a8baa;
-  line-height: 1.65; font-weight: 300; max-width: 600px;
-}
-
-/* SECTIONS */
-.section { margin-bottom: 48px; animation: riseIn 0.5s ease both; }
-.section:nth-child(1) { animation-delay: 0.05s; }
-.section:nth-child(2) { animation-delay: 0.1s; }
-.section:nth-child(3) { animation-delay: 0.15s; }
-.section:nth-child(4) { animation-delay: 0.2s; }
-
-.sec-hd { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-.sec-ttl { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
-.sec-line { flex: 1; height: 1px; background: var(--border); }
-.sec-badge {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-  text-transform: uppercase; padding: 4px 12px; border-radius: 100px;
-  white-space: nowrap;
-}
-.bp { background: rgba(167,139,250,0.1); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
-.bg { background: rgba(251,191,36,0.1);  color: var(--gold);   border: 1px solid rgba(251,191,36,0.2); }
-.bgr{ background: rgba(52,211,153,0.1);  color: var(--green);  border: 1px solid rgba(52,211,153,0.2); }
-.bm { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
-
-/* VIDEO LIST */
-.vlist { display: flex; flex-direction: column; gap: 6px; }
-.vrow {
-  display: flex; align-items: center; gap: 14px;
-  padding: 11px 16px;
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 10px; font-size: 13.5px;
-  transition: border-color 0.2s;
-}
-.vrow:hover { border-color: var(--border2); }
-.vn { font-size: 11px; font-weight: 700; color: var(--muted); width: 18px; text-align: right; flex-shrink: 0; }
-.vbar { width: 3px; height: 16px; border-radius: 2px; background: var(--purple-d); opacity: 0.5; flex-shrink: 0; }
-.vt  { flex: 1; color: var(--text); line-height: 1.4; }
-
-/* CHANNEL GRID */
-.ch-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
-  gap: 14px;
-}
-
-.ch-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 16px; padding: 18px 18px 18px 18px;
-  display: flex; gap: 14px; align-items: flex-start;
-  position: relative; overflow: hidden;
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-}
-.ch-card::before {
-  content: ''; position: absolute; inset: 0;
-  opacity: 0; transition: opacity 0.25s;
-  pointer-events: none;
-}
-.ch-card:hover { transform: translateY(-3px); }
-.ch-card:hover::before { opacity: 1; }
-
-.ccs:hover { border-color: rgba(167,139,250,0.4); box-shadow: 0 12px 36px rgba(124,58,237,0.14); }
-.ccs::before { background: radial-gradient(ellipse at top left, rgba(167,139,250,0.08), transparent 70%); }
-
-.ccl:hover { border-color: rgba(251,191,36,0.4); box-shadow: 0 12px 36px rgba(217,119,6,0.14); }
-.ccl::before { background: radial-gradient(ellipse at top left, rgba(251,191,36,0.08), transparent 70%); }
-
-.ccr:hover { border-color: rgba(52,211,153,0.4); box-shadow: 0 12px 36px rgba(5,150,105,0.14); }
-.ccr::before { background: radial-gradient(ellipse at top left, rgba(52,211,153,0.08), transparent 70%); }
-
-.ch-thumb {
-  width: 50px; height: 50px; border-radius: 50%;
-  object-fit: cover; flex-shrink: 0;
-  background: var(--surface); border: 2px solid var(--border);
-}
-.ch-body { flex: 1; min-width: 0; position: relative; z-index: 1; }
-.ch-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
-.ch-subs { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-.ch-subs strong { color: var(--text); font-weight: 600; }
-.ch-desc { font-size: 12.5px; color: #7a8baa; line-height: 1.55; font-style: italic; }
-
-.ch-tag {
-  position: absolute; top: 10px; right: 10px;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
-  text-transform: uppercase; padding: 3px 10px; border-radius: 100px;
-}
-.ccs .ch-tag { background: rgba(167,139,250,0.12); color: var(--purple); }
-.ccl .ch-tag { background: rgba(251,191,36,0.12);  color: var(--gold); }
-.ccr .ch-tag { background: rgba(52,211,153,0.12);  color: var(--green); }
-
-footer {
-  text-align: center; font-size: 12px; color: var(--muted);
-  border-top: 1px solid var(--border); padding-top: 28px; margin-top: 12px;
-}
-
-@media (max-width: 580px) {
-  .hero-inner { flex-direction: column; }
-  .ch-grid { grid-template-columns: 1fr; }
-  h1 { font-size: 40px; }
-}
+  @media (max-width: 600px) {
+    .hero-card { flex-direction: column; }
+    .search-row { flex-direction: column; }
+    .search-btn { width: 100%; }
+  }
 </style>
 </head>
 <body>
+<div class="glow-orb glow-orb-1"></div>
+<div class="glow-orb glow-orb-2"></div>
 
-<div class="glow1"></div>
-<div class="glow2"></div>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-badge">▶ YouTube Kanal Analizi</div>
+    <h1>Kanalını <span>Analiz Et</span>,<br>Rakiplerinle Karşılaştır</h1>
+    <p>Yapay zeka destekli analiz ile niş tespiti yapın ve benzer kanalları keşfedin.</p>
+  </div>
 
-<div class="wrap">
-
-  <header class="header">
-    <div class="eyebrow">
-      <div class="eyebrow-dot"></div>
-      YouTube × Gemini AI
+  <!-- Search -->
+  <div class="search-card">
+    <div class="search-row">
+      <input class="search-input" id="channelInput" type="text"
+             placeholder="Kanal adı veya @handle girin..." autocomplete="off" />
+      <button class="search-btn" id="analyzeBtn" onclick="analyze()">Analiz Et</button>
     </div>
-    <h1>Kanal<br><em>Analizörü</em></h1>
-    <p class="tagline">Herhangi bir YouTube kanalını analiz et. Benzer kanalları, niş liderlerini ve yükselen isimleri keşfet.</p>
+    <div class="search-hint">Örnek: <code>@mkbhd</code> veya <code>MrBeast</code> veya <code>Barış Özcan</code></div>
+  </div>
 
-    <div class="search-outer">
-      <div class="search-field">
-        <span class="s-icon">📺</span>
-        <input id="channelInput" type="text" placeholder="Kanal adı veya @handle girin…" autocomplete="off">
-        <button id="analyzeBtn" onclick="run()">Analiz Et</button>
-      </div>
-      <div class="quick">
-        <span class="ql">Örnek:</span>
-        <span class="qc" onclick="pick('@mkbhd')">@mkbhd</span>
-        <span class="qc" onclick="pick('@veritasium')">@veritasium</span>
-        <span class="qc" onclick="pick('@kurzgesagt')">@kurzgesagt</span>
-        <span class="qc" onclick="pick('linus tech tips')">LinusTechTips</span>
-      </div>
-    </div>
-  </header>
+  <!-- Error -->
+  <div class="error-box" id="errorBox"></div>
 
+  <!-- Progress -->
   <div id="progress">
-    <div class="steps">
-      <div class="step" id="s1"><div class="sn">1</div><span>Kanal bilgisi çekiliyor…</span></div>
-      <div class="step" id="s2"><div class="sn">2</div><span>Son 10 video başlığı alınıyor…</span></div>
-      <div class="step" id="s3"><div class="sn">3</div><span>Gemini ile niş tespiti ve kanal önerileri yapılıyor…</span></div>
-      <div class="step" id="s4"><div class="sn">4</div><span>Önerilen kanalların verileri YouTube'dan çekiliyor…</span></div>
-      <div class="step" id="s5"><div class="sn">5</div><span>Sonuçlar hazırlanıyor…</span></div>
+    <div class="progress-title">Analiz Adımları</div>
+    <div class="step-list" id="stepList">
+      <div class="step" data-step="0">
+        <div class="step-icon">📡</div>
+        <span>Kanal bilgisi alınıyor</span>
+      </div>
+      <div class="step" data-step="1">
+        <div class="step-icon">🎬</div>
+        <span>Son videolar yükleniyor</span>
+      </div>
+      <div class="step" data-step="2">
+        <div class="step-icon">🤖</div>
+        <span>Yapay zeka analiz ediyor</span>
+      </div>
+      <div class="step" data-step="3">
+        <div class="step-icon">🔍</div>
+        <span>Benzer kanallar aranıyor</span>
+      </div>
+      <div class="step" data-step="4">
+        <div class="step-icon">✨</div>
+        <span>Sonuçlar hazırlanıyor</span>
+      </div>
     </div>
   </div>
 
-  <div id="errBox"></div>
-
-  <div id="results">
-    <div id="heroSlot"></div>
-    <div id="videosSlot"></div>
-    <div id="groupsSlot"></div>
-  </div>
-
-  <footer>Tüm kanal verileri YouTube Data API v3 üzerinden canlı çekilmektedir · Niş analizi Google Gemini 2.0 Flash ile yapılmaktadır</footer>
+  <!-- Results -->
+  <div id="results"></div>
 </div>
 
 <script>
-const YT   = 'AIzaSyD_I0K-QSgYbk5bMXa0OjTARgUGXICD1G8';
-const GEM  = 'AIzaSyADt5cgXLR6ZJF0zBAJAtc4wi5AWy-MjME';
-const GURL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEM}`;
+const YT_KEY = 'AIzaSyD_I0K-QSgYbk5bMXa0OjTARgUGXICD1G8';
+const GM_KEY = 'AIzaSyDasZkw2jYy36e6t9c3Xeg4ZAedl_--jVE';
+const GM_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GM_KEY}`;
 
-function pick(v) { document.getElementById('channelInput').value = v; }
-document.getElementById('channelInput').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+let currentStep = -1;
 
-function stepSet(id, state) {
-  const el = document.getElementById(id);
-  el.className = 'step ' + state;
-  const n = el.querySelector('.sn');
-  const num = id.replace('s', '');
-  if (state === 'active') n.innerHTML = '<div class="spin"></div>';
-  else if (state === 'done') n.textContent = '✓';
-  else if (state === 'err')  n.textContent = '✕';
-  else n.textContent = num;
+function setStep(n) {
+  currentStep = n;
+  document.querySelectorAll('.step').forEach((el, i) => {
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done'), el.querySelector('.step-icon').textContent = '✓';
+    else if (i === n) el.classList.add('active');
+  });
 }
 
-function showErr(msg) {
-  const b = document.getElementById('errBox');
-  b.style.display = 'block';
-  b.innerHTML = '⚠️ ' + msg;
-  document.getElementById('analyzeBtn').disabled = false;
+function showProgress(show) {
+  document.getElementById('progress').style.display = show ? 'block' : 'none';
 }
 
-function fmt(n) {
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+function formatNum(n) {
   n = parseInt(n) || 0;
   if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
   if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
   if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
-  return '' + n;
+  return n.toString();
 }
 
-function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+async function ytFetch(url) {
+  const res = await fetch(url);
+  if (res.status === 429) throw new Error('QUOTA');
+  const data = await res.json();
+  if (data.error) {
+    if (data.error.code === 429) throw new Error('QUOTA');
+    throw new Error(data.error.message || 'YouTube API hatası');
+  }
+  return data;
 }
 
-async function ytGet(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('YouTube API hatası: ' + r.status);
-  return r.json();
-}
-
-async function geminiCall(prompt) {
-  const r = await fetch(GURL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-  });
-  if (r.status === 429) throw new Error('QUOTA');
-  if (!r.ok) throw new Error('Gemini API hatası: ' + r.status);
-  const d = await r.json();
-  return d.candidates[0].content.parts[0].text;
-}
-
-function stripFences(s) {
-  return s.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-}
-
-async function run() {
+async function analyze() {
   const query = document.getElementById('channelInput').value.trim();
   if (!query) return;
 
-  document.getElementById('analyzeBtn').disabled = true;
-  document.getElementById('errBox').style.display = 'none';
+  hideError();
   document.getElementById('results').style.display = 'none';
-  document.getElementById('progress').style.display = 'block';
-  ['s1','s2','s3','s4','s5'].forEach(id => stepSet(id, 'idle'));
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.querySelectorAll('.step').forEach(el => {
+    el.classList.remove('active','done');
+    const icons = ['📡','🎬','🤖','🔍','✨'];
+    el.querySelector('.step-icon').textContent = icons[el.dataset.step];
+  });
+  showProgress(true);
 
   try {
-    /* ── S1: Channel info ── */
-    stepSet('s1', 'active');
-
-    const srData = await ytGet(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=1&key=${YT}`
+    // Step 0: Channel info
+    setStep(0);
+    const searchData = await ytFetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=1&key=${YT_KEY}`
     );
-    if (!srData.items?.length) throw new Error('Kanal bulunamadı. Farklı bir isim veya @handle deneyin.');
-    const cid = srData.items[0].snippet.channelId || srData.items[0].id.channelId;
+    if (!searchData.items?.length) throw new Error('Kanal bulunamadı.');
+    const channelId = searchData.items[0].id.channelId;
 
-    const chData = await ytGet(
-      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${cid}&key=${YT}`
+    const chanData = await ytFetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${YT_KEY}`
     );
-    if (!chData.items?.length) throw new Error('Kanal detayları alınamadı.');
-    const ch = chData.items[0];
+    if (!chanData.items?.length) throw new Error('Kanal detayları alınamadı.');
+    const channel = chanData.items[0];
+    const channelName = channel.snippet.title;
+    const thumbnail = channel.snippet.thumbnails?.high?.url || channel.snippet.thumbnails?.default?.url || '';
+    const subs = channel.statistics?.subscriberCount || '0';
+    const views = channel.statistics?.viewCount || '0';
+    const videoCount = channel.statistics?.videoCount || '0';
 
-    const chName   = ch.snippet.title;
-    const chSubs   = ch.statistics.subscriberCount || '0';
-    const chViews  = ch.statistics.viewCount || '0';
-    const chVids   = ch.statistics.videoCount || '0';
-    const chThumb  = ch.snippet.thumbnails?.medium?.url || ch.snippet.thumbnails?.default?.url || '';
-    const chHandle = ch.snippet.customUrl || '';
-    const chDesc   = (ch.snippet.description || '').slice(0, 400);
-    stepSet('s1', 'done');
-
-    /* ── S2: Last 10 videos ── */
-    stepSet('s2', 'active');
-    const vData = await ytGet(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${cid}&order=date&type=video&maxResults=10&key=${YT}`
+    // Step 1: Last 10 videos
+    setStep(1);
+    const videosData = await ytFetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&maxResults=10&type=video&key=${YT_KEY}`
     );
-    const titles = (vData.items || []).map(v => v.snippet.title);
-    stepSet('s2', 'done');
+    const videoTitles = (videosData.items || []).map(v => v.snippet.title);
 
-    /* ── S3: Single Gemini call ── */
-    stepSet('s3', 'active');
+    // Step 2: Gemini analysis (1 call)
+    setStep(2);
+    const geminiPrompt = `
+YouTube kanalı hakkında analiz yap:
+Kanal: "${channelName}"
+Abone: ${formatNum(subs)}
+Toplam görüntülenme: ${formatNum(views)}
+Son 10 video başlığı: ${JSON.stringify(videoTitles)}
 
-    const prompt = `Sen bir YouTube içerik stratejisti uzmanısın.
-
-KANAL BİLGİSİ:
-Ad: ${chName}
-Abone: ~${fmt(chSubs)}
-Açıklama: ${chDesc}
-Son 10 Video:
-${titles.map((t, i) => `${i+1}. ${t}`).join('\n')}
-
-GÖREVİN — Yalnızca JSON döndür, başka hiçbir şey yazma:
-1. Kanalın ana nişini tespit et.
-2. Bu nişte YouTube'da GERÇEKTEN VAR OLAN kanalları 3 gruba ayırarak öner:
-   - "similar_size": ~${fmt(chSubs)} aboneye yakın büyüklükte, aynı nişte 5 gerçek kanal
-   - "niche_leaders": Bu nişin dev/lider kanalları (çok daha büyük), 5 kanal
-   - "rising": Bu nişte yükselen küçük ama büyüyen kanallar, 5 kanal
-
-Her kanalın "name" alanına YouTube'daki tam resmi adını yaz.
-
-JSON FORMATI (başka hiçbir şey yazma, markdown kullanma):
+Sadece JSON döndür, başka hiçbir şey yazma:
 {
-  "niche": "nişin Türkçe adı (2-4 kelime)",
-  "niche_en": "niche in English",
-  "summary": "kanal hakkında 1-2 cümle Türkçe özet",
-  "similar_size": [{"name": "tam kanal adı", "reason": "1 cümle Türkçe açıklama"}],
-  "niche_leaders": [{"name": "tam kanal adı", "reason": "1 cümle Türkçe açıklama"}],
-  "rising": [{"name": "tam kanal adı", "reason": "1 cümle Türkçe açıklama"}]
-}`;
+  "niche": "Türkçe niş adı",
+  "niche_en": "English niche name",
+  "summary": "1-2 cümle Türkçe özet",
+  "similar_size": [
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"},
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"},
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"}
+  ],
+  "niche_leaders": [
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"},
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"}
+  ],
+  "rising": [
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"},
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"}
+  ]
+}
 
-    const raw = await geminiCall(prompt);
-    const ai = JSON.parse(stripFences(raw));
-    stepSet('s3', 'done');
+similar_size: 3 kanal (benzer büyüklükte), niche_leaders: 2 kanal (niş liderleri), rising: 2 kanal (yükselen kanallar). Toplam 7 kanal. Gerçek, var olan YouTube kanalları öner.`;
 
-    /* ── S4: Fetch real YouTube data for suggested channels ── */
-    stepSet('s4', 'active');
-
-    async function fetchChBatch(names) {
-      // Step 1: search all names in parallel (max 5 at a time to avoid quota)
-      const chunks = [];
-      for(let i=0;i<names.length;i+=5) chunks.push(names.slice(i,i+5));
-      const idMap = {};
-      for(const chunk of chunks){
-        await Promise.all(chunk.map(async name => {
-          try{
-            const sr = await ytGet(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(name)}&maxResults=1&key=${YT}`);
-            if(sr.items?.length){
-              const id = sr.items[0].snippet.channelId || sr.items[0].id.channelId;
-              idMap[name] = id;
-            }
-          }catch{}
-        }));
-      }
-      // Step 2: fetch all channel details in ONE batch call
-      const ids = Object.values(idMap).join(',');
-      if(!ids) return {};
-      const det = await ytGet(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${ids}&key=${YT}`);
-      const byId = {};
-      for(const it of (det.items||[])){
-        byId[it.id] = {
-          id: it.id,
-          title: it.snippet.title,
-          thumb: it.snippet.thumbnails?.medium?.url || it.snippet.thumbnails?.default?.url || '',
-          subs: parseInt(it.statistics?.subscriberCount||0),
-          handle: it.snippet.customUrl||''
-        };
-      }
-      const result = {};
-      for(const [name,id] of Object.entries(idMap)){
-        if(byId[id]) result[name] = byId[id];
-      }
-      return result;
+    const gmRes = await fetch(GM_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'gemini-2.0-flash',
+        max_tokens: 1000,
+        contents: [{ parts: [{ text: geminiPrompt }] }]
+      })
+    });
+    if (gmRes.status === 429) throw new Error('QUOTA');
+    const gmData = await gmRes.json();
+    if (gmData.error) {
+      if (gmData.error.code === 429) throw new Error('QUOTA');
+      throw new Error(gmData.error.message || 'Gemini API hatası');
     }
 
-    const allNames = [
-      ...(ai.similar_size||[]),
-      ...(ai.niche_leaders||[]),
-      ...(ai.rising||[])
-    ].map(i=>i.name);
+    let rawText = gmData.candidates[0].content.parts[0].text;
+    // Strip markdown fences
+    rawText = rawText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const ai = JSON.parse(rawText);
 
-    const ytDataMap = await fetchChBatch(allNames);
+    // Step 3: Search similar channels in parallel
+    setStep(3);
+    const allChannels = [...(ai.similar_size || []), ...(ai.niche_leaders || []), ...(ai.rising || [])];
 
-    function enrichGroup(arr){
-      return arr.map(item=>({...item, yt: ytDataMap[item.name]||null})).filter(r=>r.yt!==null);
+    const searchResults = await Promise.all(
+      allChannels.map(ch =>
+        ytFetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(ch.name)}&maxResults=1&key=${YT_KEY}`)
+          .then(d => d.items?.[0]?.id?.channelId || null)
+          .catch(() => null)
+      )
+    );
+
+    const channelIds = searchResults.filter(Boolean);
+
+    // Step 4: Batch fetch all 7 channel details in ONE call
+    setStep(4);
+    let channelDetails = {};
+    if (channelIds.length > 0) {
+      const batchData = await ytFetch(
+        `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelIds.join(',')}&key=${YT_KEY}`
+      );
+      (batchData.items || []).forEach(item => {
+        channelDetails[item.snippet.title.toLowerCase()] = item;
+        channelDetails[item.id] = item;
+      });
+      // Map by channelId order
+      searchResults.forEach((id, i) => {
+        if (id) channelDetails[`idx_${i}`] = batchData.items?.find(it => it.id === id) || null;
+      });
     }
 
-    const simG  = enrichGroup(ai.similar_size  || []);
-    const leadG = enrichGroup(ai.niche_leaders || []);
-    const riseG = enrichGroup(ai.rising        || []);
-    stepSet('s4', 'done');
+    // Done
+    setStep(5);
+    showProgress(false);
+    renderResults(channel, ai, allChannels, searchResults, channelDetails, batchData => batchData);
 
-    /* ── S5: Render ── */
-    stepSet('s5', 'active');
-    await new Promise(r => setTimeout(r, 350));
-    stepSet('s5', 'done');
-
-    setTimeout(() => {
-      document.getElementById('progress').style.display = 'none';
-      render(ch, chThumb, chHandle, chSubs, chViews, chVids, titles, ai, simG, leadG, riseG);
-    }, 400);
-
-  } catch (e) {
-    const active = document.querySelector('.step.active');
-    if (active) { active.className = 'step err'; active.querySelector('.sn').textContent = '✕'; }
-    if (e.message === 'QUOTA') {
-      showErr('Kota limitine ulaşıldı, 1 dakika bekleyip tekrar deneyin.');
+  } catch (err) {
+    showProgress(false);
+    if (err.message === 'QUOTA') {
+      showError('Kota limitine ulaşıldı, 1 dakika bekleyip tekrar deneyin.');
     } else {
-      showErr(e.message || 'Bilinmeyen bir hata oluştu.');
+      showError(err.message || 'Bilinmeyen bir hata oluştu.');
     }
+  } finally {
+    document.getElementById('analyzeBtn').disabled = false;
   }
 }
 
-function render(ch, thumb, handle, subs, views, vids, titles, ai, sim, lead, rise) {
-  /* Hero */
-  document.getElementById('heroSlot').innerHTML = `
-    <div class="hero">
-      <div class="hero-inner">
-        <img class="hero-thumb" src="${esc(thumb)}" alt="${esc(ch.snippet.title)}"
-          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2288%22 height=%2288%22><rect width=%2288%22 height=%2288%22 fill=%22%23111827%22 rx=%2244%22/><text x=%2244%22 y=%2256%22 font-size=%2232%22 text-anchor=%22middle%22 fill=%22%236b7a99%22>📺</text></svg>'">
-        <div class="hero-info">
-          <div class="hero-name">${esc(ch.snippet.title)}</div>
-          ${handle ? `<div class="hero-handle">${esc(handle)}</div>` : ''}
-          <div class="stats-row">
-            <div class="stat">👥 <strong>${fmt(subs)}</strong> abone</div>
-            <div class="stat">🎬 <strong>${parseInt(vids).toLocaleString()}</strong> video</div>
-            <div class="stat">👁️ <strong>${fmt(views)}</strong> görüntülenme</div>
+// Re-run with resolved details
+async function analyze() {
+  const query = document.getElementById('channelInput').value.trim();
+  if (!query) return;
+
+  hideError();
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.querySelectorAll('.step').forEach((el, i) => {
+    el.classList.remove('active','done');
+    const icons = ['📡','🎬','🤖','🔍','✨'];
+    el.querySelector('.step-icon').textContent = icons[i];
+  });
+  showProgress(true);
+
+  try {
+    setStep(0);
+    const searchData = await ytFetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=1&key=${YT_KEY}`
+    );
+    if (!searchData.items?.length) throw new Error('Kanal bulunamadı.');
+    const channelId = searchData.items[0].id.channelId;
+
+    const chanData = await ytFetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${YT_KEY}`
+    );
+    if (!chanData.items?.length) throw new Error('Kanal detayları alınamadı.');
+    const channel = chanData.items[0];
+    const channelName = channel.snippet.title;
+    const thumbnail = channel.snippet.thumbnails?.high?.url || channel.snippet.thumbnails?.default?.url || '';
+    const subs = channel.statistics?.subscriberCount || '0';
+    const views = channel.statistics?.viewCount || '0';
+
+    setStep(1);
+    const videosData = await ytFetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&maxResults=10&type=video&key=${YT_KEY}`
+    );
+    const videoTitles = (videosData.items || []).map(v => v.snippet.title);
+
+    setStep(2);
+    const geminiPrompt = `
+YouTube kanalı hakkında analiz yap:
+Kanal: "${channelName}"
+Abone: ${formatNum(subs)}
+Toplam görüntülenme: ${formatNum(views)}
+Son 10 video başlığı: ${JSON.stringify(videoTitles)}
+
+Sadece JSON döndür, başka hiçbir şey yazma, markdown fence kullanma:
+{
+  "niche": "Türkçe niş adı",
+  "niche_en": "English niche name",
+  "summary": "1-2 cümle Türkçe özet",
+  "similar_size": [
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"},
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"},
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"}
+  ],
+  "niche_leaders": [
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"},
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"}
+  ],
+  "rising": [
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"},
+    {"name": "exact YouTube channel name", "reason": "Türkçe açıklama"}
+  ]
+}`;
+
+    const gmRes = await fetch(GM_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: geminiPrompt }] }]
+      })
+    });
+    if (gmRes.status === 429) throw new Error('QUOTA');
+    const gmData = await gmRes.json();
+    if (gmData.error) {
+      if (gmData.error.code === 429) throw new Error('QUOTA');
+      throw new Error(gmData.error.message || 'Gemini API hatası');
+    }
+
+    let rawText = gmData.candidates[0].content.parts[0].text;
+    rawText = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    const ai = JSON.parse(rawText);
+
+    setStep(3);
+    const groups = {
+      similar_size: ai.similar_size || [],
+      niche_leaders: ai.niche_leaders || [],
+      rising: ai.rising || []
+    };
+    const allChannels = [...groups.similar_size, ...groups.niche_leaders, ...groups.rising];
+
+    const idResults = await Promise.all(
+      allChannels.map(ch =>
+        ytFetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(ch.name)}&maxResults=1&key=${YT_KEY}`)
+          .then(d => ({ id: d.items?.[0]?.id?.channelId || null }))
+          .catch(() => ({ id: null }))
+      )
+    );
+
+    setStep(4);
+    const validIds = idResults.map(r => r.id).filter(Boolean);
+    let detailMap = {}; // id -> item
+
+    if (validIds.length > 0) {
+      const batchData = await ytFetch(
+        `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${validIds.join(',')}&key=${YT_KEY}`
+      );
+      (batchData.items || []).forEach(item => {
+        detailMap[item.id] = item;
+      });
+    }
+
+    // Map each channel with its id and detail
+    const enriched = allChannels.map((ch, i) => ({
+      ...ch,
+      ytId: idResults[i]?.id || null,
+      detail: idResults[i]?.id ? detailMap[idResults[i].id] || null : null
+    }));
+
+    setStep(5);
+    setTimeout(() => showProgress(false), 300);
+
+    renderResults(channel, ai, enriched, groups);
+
+  } catch (err) {
+    showProgress(false);
+    if (err.message === 'QUOTA') {
+      showError('Kota limitine ulaşıldı, 1 dakika bekleyip tekrar deneyin.');
+    } else {
+      showError(err.message || 'Bilinmeyen bir hata oluştu.');
+    }
+  } finally {
+    document.getElementById('analyzeBtn').disabled = false;
+  }
+}
+
+function renderResults(channel, ai, enriched, groups) {
+  const subs = channel.statistics?.subscriberCount || '0';
+  const views = channel.statistics?.viewCount || '0';
+  const videoCount = channel.statistics?.videoCount || '0';
+  const thumb = channel.snippet.thumbnails?.high?.url || channel.snippet.thumbnails?.default?.url || '';
+
+  const groupSizes = {
+    similar_size: (groups.similar_size || []).length,
+    niche_leaders: (groups.niche_leaders || []).length,
+    rising: (groups.rising || []).length
+  };
+
+  const similarChannels = enriched.slice(0, groupSizes.similar_size);
+  const leaderChannels = enriched.slice(groupSizes.similar_size, groupSizes.similar_size + groupSizes.niche_leaders);
+  const risingChannels = enriched.slice(groupSizes.similar_size + groupSizes.niche_leaders);
+
+  function channelCardHTML(ch, delay) {
+    const d = ch.detail;
+    const name = d ? d.snippet.title : ch.name;
+    const subCount = d ? formatNum(d.statistics?.subscriberCount || 0) + ' abone' : 'Bilgi yok';
+    const avatarUrl = d ? (d.snippet.thumbnails?.high?.url || d.snippet.thumbnails?.default?.url || '') : '';
+    const avatarHTML = avatarUrl
+      ? `<img class="channel-avatar" src="${avatarUrl}" alt="${name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      + `<div class="channel-avatar-placeholder" style="display:none">📺</div>`
+      : `<div class="channel-avatar-placeholder">📺</div>`;
+    return `
+      <div class="channel-card" style="animation-delay:${delay}s">
+        <div class="channel-card-top">
+          <div style="position:relative;flex-shrink:0">${avatarHTML}</div>
+          <div class="channel-meta">
+            <div class="channel-name" title="${name}">${name}</div>
+            <div class="channel-subs">${subCount}</div>
           </div>
-          <div class="niche-pill">🎯 ${esc(ai.niche)}</div>
-          <p class="hero-summary">${esc(ai.summary)}</p>
         </div>
-      </div>
-    </div>`;
-
-  /* Videos */
-  document.getElementById('videosSlot').innerHTML = `
-    <div class="section">
-      <div class="sec-hd">
-        <div class="sec-ttl">Son Yüklenen Videolar</div>
-        <span class="sec-badge bm">${titles.length} video</span>
-        <div class="sec-line"></div>
-      </div>
-      <div class="vlist">
-        ${titles.map((t,i) => `
-          <div class="vrow">
-            <div class="vn">${i+1}</div>
-            <div class="vbar"></div>
-            <div class="vt">${esc(t)}</div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-
-  /* Channel groups */
-  const groups = [
-    { data: sim,  title: 'Benzer Kanallar',  badge: 'bp', cls: 'ccs', tag: '⚖️ Benzer',   desc: 'Aynı büyüklük & niş' },
-    { data: lead, title: 'Niş Liderleri',     badge: 'bg', cls: 'ccl', tag: '👑 Lider',    desc: 'Alanın devleri' },
-    { data: rise, title: 'Yükselen Kanallar', badge: 'bgr',cls: 'ccr', tag: '🚀 Yükselen', desc: 'Büyümeye devam edenler' },
-  ];
-
-  let html = '';
-  for (const g of groups) {
-    if (!g.data.length) continue;
-    const cards = g.data.map(item => {
-      const t = item.yt?.thumb || '';
-      const n = item.yt?.title || item.name;
-      const s = item.yt ? fmt(item.yt.subs) + ' abone' : '';
-      return `
-        <div class="ch-card ${g.cls}">
-          <div class="ch-tag">${g.tag}</div>
-          <img class="ch-thumb" src="${esc(t)}" alt="${esc(n)}"
-            onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22><rect width=%2250%22 height=%2250%22 fill=%22%23111827%22 rx=%2225%22/><text x=%2225%22 y=%2232%22 font-size=%2218%22 text-anchor=%22middle%22 fill=%22%236b7a99%22>📺</text></svg>'">
-          <div class="ch-body">
-            <div class="ch-name">${esc(n)}</div>
-            ${s ? `<div class="ch-subs"><strong>${s}</strong></div>` : ''}
-            <div class="ch-desc">${esc(item.reason)}</div>
-          </div>
-        </div>`;
-    }).join('');
-
-    html += `
-      <div class="section">
-        <div class="sec-hd">
-          <div class="sec-ttl">${g.title}</div>
-          <span class="sec-badge ${g.badge}">${g.desc}</span>
-          <div class="sec-line"></div>
-        </div>
-        <div class="ch-grid">${cards}</div>
+        <div class="channel-reason">${ch.reason}</div>
       </div>`;
   }
 
-  document.getElementById('groupsSlot').innerHTML = html;
-  document.getElementById('results').style.display = 'block';
-  document.getElementById('analyzeBtn').disabled = false;
-  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  function groupSection(title, badge, desc, channels, startDelay) {
+    if (!channels.length) return '';
+    return `
+      <div class="section">
+        <div class="section-header">
+          <span class="section-badge ${badge}">${title}</span>
+          <span class="section-desc">${desc}</span>
+        </div>
+        <div class="channel-grid">
+          ${channels.map((ch, i) => channelCardHTML(ch, startDelay + i * 0.08)).join('')}
+        </div>
+      </div>`;
+  }
+
+  const thumbHTML = thumb
+    ? `<img class="hero-thumb" src="${thumb}" alt="${channel.snippet.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="hero-thumb-placeholder" style="display:none">📺</div>`
+    : `<div class="hero-thumb-placeholder">📺</div>`;
+
+  const html = `
+    <div class="hero-card">
+      ${thumbHTML}
+      <div class="hero-info">
+        <div class="hero-name">${channel.snippet.title}</div>
+        <div class="hero-niche">${ai.niche} · ${ai.niche_en}</div>
+        <div class="hero-summary">${ai.summary}</div>
+        <div class="hero-stats">
+          <div class="stat stat-subs">
+            <span class="stat-value">${formatNum(subs)}</span>
+            <span class="stat-label">Abone</span>
+          </div>
+          <div class="stat stat-views">
+            <span class="stat-value">${formatNum(views)}</span>
+            <span class="stat-label">Görüntülenme</span>
+          </div>
+          <div class="stat stat-videos">
+            <span class="stat-value">${formatNum(videoCount)}</span>
+            <span class="stat-label">Video</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    ${groupSection('Benzer Büyüklükte', 'badge-purple', 'Yakın abone sayısına sahip kanallar', similarChannels, 0)}
+    ${groupSection('Niş Liderleri', 'badge-gold', 'Bu alanda en güçlü kanallar', leaderChannels, 0.1)}
+    ${groupSection('Yükselen Kanallar', 'badge-green', 'Hızla büyüyen ve dikkat çeken kanallar', risingChannels, 0.2)}
+  `;
+
+  const resultsEl = document.getElementById('results');
+  resultsEl.innerHTML = html;
+  resultsEl.style.display = 'block';
 }
+
+// Enter key support
+document.getElementById('channelInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') analyze();
+});
 </script>
 </body>
 </html>
